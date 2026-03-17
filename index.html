@@ -11,6 +11,7 @@
     
     <title>Ruta Élite 360</title>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ffffff; --accent: #2563eb; --success: #16a34a; --save: #d97706; --danger: #dc2626; --gear: #7c3aed; --taxi: #eab308; --border: #e5e7eb; }
@@ -435,16 +436,22 @@
         document.getElementById('taxi_distancia').innerHTML = "0.00<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; document.getElementById('taxi_tiempo').innerText = "00:00"; document.getElementById('taxi_espera').innerText = "00:00";
         actualizarPrecioTaxi(); document.getElementById('btn_taxi_start').style.display = 'none'; document.getElementById('btn_taxi_stop').style.display = 'block';
         
-        taxiInterval = setInterval(() => {
+                taxiInterval = setInterval(() => {
             let now = Date.now();
-            let deltaSecs = (now - taxiLastTick) / 1000; // Segundos reales desde el último tick
+            let deltaSecs = (now - taxiLastTick) / 1000; 
             taxiLastTick = now;
 
-            taxiTimeTotal += deltaSecs;
-            let distDelta = taxiDist - taxiLastDist; 
-            if (distDelta < 0.003) { taxiWaitSecs += deltaSecs; } // Suma el tiempo real de espera
+            taxiTimeTotal += deltaSecs; // El tiempo total de viaje sigue corriendo
+            
+            // FILTRO ANTI-SUEÑO: Si deltaSecs es mayor a 2, significa que minimizaste la app
+            // Por lo tanto, NO sumamos ese tiempo ciego a la espera para no cobrar de más.
+            if (deltaSecs < 2.0) {
+                let distDelta = taxiDist - taxiLastDist; 
+                if (distDelta < 0.003) { taxiWaitSecs += deltaSecs; } 
+            }
             
             taxiLastDist = taxiDist; actualizarPrecioTaxi();
+
             
             let m = Math.floor(taxiTimeTotal / 60).toString().padStart(2,'0'); let s = Math.floor(taxiTimeTotal % 60).toString().padStart(2,'0'); document.getElementById('taxi_tiempo').innerText = `${m}:${s}`;
             let we = Math.floor(taxiWaitSecs / 60).toString().padStart(2,'0'); let se = Math.floor(taxiWaitSecs % 60).toString().padStart(2,'0'); document.getElementById('taxi_espera').innerText = `${we}:${se}`;
