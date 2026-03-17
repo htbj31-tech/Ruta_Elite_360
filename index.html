@@ -697,6 +697,13 @@
         } catch(e) {}
     }
     function exportarExcel() { const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let csv = "Fecha,Ingreso Bruto,Gasolina,KM Recorridos,Horas Taxi,Sueldo Limpio,Valor x Hora,Ahorro\n"; db.forEach(r => { csv += `${r.completa},${r.ing},${r.gas},${r.km||0},${r.hTaxi||0},${r.neto.toFixed(2)},${(r.netoHora||0).toFixed(2)},${r.ahorro}\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], {type: 'text/csv;charset=utf-8;'})); link.download = "Ruta_Elite_360_Reporte.csv"; link.click(); }
+<script>
+    // Registrar el Service Worker para que sea una App Instalable
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log("¡Motor PWA activado!"))
+        .catch((err) => console.log("Error PWA:", err));
+    }
 </script>
 </body>
 </html>
