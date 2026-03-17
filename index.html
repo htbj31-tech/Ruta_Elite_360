@@ -453,10 +453,16 @@
             let we = Math.floor(taxiWaitSecs / 60).toString().padStart(2,'0'); let se = Math.floor(taxiWaitSecs % 60).toString().padStart(2,'0'); document.getElementById('taxi_espera').innerText = `${we}:${se}`;
         }, 1000);
         
-        taxiWatchId = navigator.geolocation.watchPosition((position) => {
+                taxiWatchId = navigator.geolocation.watchPosition((position) => {
             if (taxiLat !== null) { let d = getDistanceFromLatLonInKm(taxiLat, taxiLon, position.coords.latitude, position.coords.longitude); if (d > 0.005) { taxiDist += d; document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; } }
             taxiLat = position.coords.latitude; taxiLon = position.coords.longitude; 
-        }, (err) => { console.log(err); }, { enableHighAccuracy: true });
+        }, (err) => { 
+            // NUEVO: Manejo de errores de GPS visible en pantalla
+            if(err.code === 1) { alert("⚠️ GPS Denegado: La aplicación no tiene permisos de ubicación."); }
+            else if(err.code === 2) { alert("⚠️ GPS Inactivo: Enciende la ubicación de tu teléfono."); }
+            else { alert("⚠️ Error de GPS: " + err.message); }
+        }, { enableHighAccuracy: true });
+
     }
 
     function actualizarPrecioTaxi() { let perfiles = cargarPerfiles(); let p = perfiles[perfilActivo]; let minsEspera = taxiWaitSecs / 60; taxiPriceFinal = p.base + (taxiDist * p.km) + (minsEspera * p.min); document.getElementById('taxi_precio').innerText = "$" + taxiPriceFinal.toFixed(2); }
