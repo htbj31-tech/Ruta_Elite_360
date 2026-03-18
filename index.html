@@ -427,50 +427,69 @@
         
         lockScreen(); 
         
-        taxiDist = 0; taxiWaitSecs = 0; taxiTimeTotal = 0; taxiLastDist = 0; taxiLat = null; taxiLon = null;
+        // 1. Reiniciamos variables al empezar el viaje
+        taxiDist = 0; 
+        taxiWaitSecs = 0; 
+        taxiTimeTotal = 0; 
+        taxiLat = null; 
+        taxiLon = null;
         taxiLastTick = Date.now(); 
         
-        document.getElementById('taxi_distancia').innerHTML = "0.00<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; document.getElementById('taxi_tiempo').innerText = "00:00"; document.getElementById('taxi_espera').innerText = "00:00";
-        actualizarPrecioTaxi(); document.getElementById('btn_taxi_start').style.display = 'none'; document.getElementById('btn_taxi_stop').style.display = 'block';
+        // NUEVA VARIABLE: Guarda la hora exacta del último movimiento
+        let tiempoUltimoMovimiento = Date.now(); 
         
-                taxiInterval = setInterval(() => {
+        document.getElementById('taxi_distancia').innerHTML = "0.00<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; 
+        document.getElementById('taxi_tiempo').innerText = "00:00"; 
+        document.getElementById('taxi_espera').innerText = "00:00";
+        actualizarPrecioTaxi(); 
+        document.getElementById('btn_taxi_start').style.display = 'none'; 
+        document.getElementById('btn_taxi_stop').style.display = 'block';
+        
+        // 2. EL MOTOR DE TIEMPO (Cronómetro)
+        taxiInterval = setInterval(() => {
             let now = Date.now();
             let deltaSecs = (now - taxiLastTick) / 1000; 
             taxiLastTick = now;
 
             taxiTimeTotal += deltaSecs; 
             
-            // FILTRO ANTI-SUEÑO Y VELOCIDAD CERO
-            if (deltaSecs <= 2.0) {
-                let distDelta = taxiDist - taxiLastDist; 
-                // Si la distancia recorrida en este segundo es menor a medio metro (velocidad cero)
-                if (distDelta < 0.0005) { 
-                    taxiWaitSecs += deltaSecs; 
-                } 
+            // LÓGICA DE VELOCIDAD CERO ESTRICTA:
+            // Solo cobra espera si han pasado MÁS de 4 segundos sin recibir movimiento del GPS
+            if ((now - tiempoUltimoMovimiento) > 4000) {
+                taxiWaitSecs += deltaSecs; 
             }
             
-            taxiLastDist = taxiDist; actualizarPrecioTaxi();
+            actualizarPrecioTaxi();
             
-            let m = Math.floor(taxiTimeTotal / 60).toString().padStart(2,'0'); let s = Math.floor(taxiTimeTotal % 60).toString().padStart(2,'0'); document.getElementById('taxi_tiempo').innerText = `${m}:${s}`;
-            let we = Math.floor(taxiWaitSecs / 60).toString().padStart(2,'0'); let se = Math.floor(taxiWaitSecs % 60).toString().padStart(2,'0'); document.getElementById('taxi_espera').innerText = `${we}:${se}`;
+            // Actualizar textos en pantalla
+            let m = Math.floor(taxiTimeTotal / 60).toString().padStart(2,'0'); 
+            let s = Math.floor(taxiTimeTotal % 60).toString().padStart(2,'0'); 
+            document.getElementById('taxi_tiempo').innerText = `${m}:${s}`;
+            let we = Math.floor(taxiWaitSecs / 60).toString().padStart(2,'0'); 
+            let se = Math.floor(taxiWaitSecs % 60).toString().padStart(2,'0'); 
+            document.getElementById('taxi_espera').innerText = `${we}:${se}`;
         }, 1000);
-
-                        taxiWatchId = navigator.geolocation.watchPosition((position) => {
+        
+        // 3. EL SENSOR DE MOVIMIENTO (GPS)
+        taxiWatchId = navigator.geolocation.watchPosition((position) => {
             if (taxiLat !== null) { 
                 let d = getDistanceFromLatLonInKm(taxiLat, taxiLon, position.coords.latitude, position.coords.longitude); 
-                // Actualiza la distancia incluso si solo te mueves 1 metro
-                if (d > 0.001) { 
+                
+                // Si el auto avanza al menos 2 metros (0.002 km)...
+                if (d > 0.002) { 
                     taxiDist += d; 
+                    // ¡EL AUTO SE MOVIÓ! Reseteamos el cronómetro de inactividad
+                    tiempoUltimoMovimiento = Date.now(); 
                     document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; 
                 } 
             }
-            taxiLat = position.coords.latitude; taxiLon = position.coords.longitude; 
+            taxiLat = position.coords.latitude; 
+            taxiLon = position.coords.longitude; 
         }, (err) => { 
             if(err.code === 1) { alert("⚠️ GPS Denegado: La app no tiene permisos de ubicación."); }
             else if(err.code === 2) { alert("⚠️ GPS Inactivo: Enciende la ubicación de tu teléfono."); }
             else { alert("⚠️ Error de GPS: " + err.message); }
         }, { enableHighAccuracy: true });
-
     }
 
     function actualizarPrecioTaxi() { let perfiles = cargarPerfiles(); let p = perfiles[perfilActivo]; let minsEspera = taxiWaitSecs / 60; taxiPriceFinal = p.base + (taxiDist * p.km) + (minsEspera * p.min); document.getElementById('taxi_precio').innerText = "$" + taxiPriceFinal.toFixed(2); }
