@@ -433,18 +433,20 @@
         document.getElementById('taxi_distancia').innerHTML = "0.00<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; document.getElementById('taxi_tiempo').innerText = "00:00"; document.getElementById('taxi_espera').innerText = "00:00";
         actualizarPrecioTaxi(); document.getElementById('btn_taxi_start').style.display = 'none'; document.getElementById('btn_taxi_stop').style.display = 'block';
         
-        taxiInterval = setInterval(() => {
+                taxiInterval = setInterval(() => {
             let now = Date.now();
             let deltaSecs = (now - taxiLastTick) / 1000; 
             taxiLastTick = now;
 
             taxiTimeTotal += deltaSecs; 
             
-            // FILTRO ANTI-SUEÑO: Si minimizas la app, deltaSecs será grande (> 2s)
-            // Por ende, no suma espera para evitar cobrar de más injustamente.
+            // FILTRO ANTI-SUEÑO Y VELOCIDAD CERO
             if (deltaSecs <= 2.0) {
                 let distDelta = taxiDist - taxiLastDist; 
-                if (distDelta < 0.003) { taxiWaitSecs += deltaSecs; } 
+                // Si la distancia recorrida en este segundo es menor a medio metro (velocidad cero)
+                if (distDelta < 0.0005) { 
+                    taxiWaitSecs += deltaSecs; 
+                } 
             }
             
             taxiLastDist = taxiDist; actualizarPrecioTaxi();
@@ -452,13 +454,19 @@
             let m = Math.floor(taxiTimeTotal / 60).toString().padStart(2,'0'); let s = Math.floor(taxiTimeTotal % 60).toString().padStart(2,'0'); document.getElementById('taxi_tiempo').innerText = `${m}:${s}`;
             let we = Math.floor(taxiWaitSecs / 60).toString().padStart(2,'0'); let se = Math.floor(taxiWaitSecs % 60).toString().padStart(2,'0'); document.getElementById('taxi_espera').innerText = `${we}:${se}`;
         }, 1000);
-        
-                taxiWatchId = navigator.geolocation.watchPosition((position) => {
-            if (taxiLat !== null) { let d = getDistanceFromLatLonInKm(taxiLat, taxiLon, position.coords.latitude, position.coords.longitude); if (d > 0.005) { taxiDist += d; document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; } }
+
+                        taxiWatchId = navigator.geolocation.watchPosition((position) => {
+            if (taxiLat !== null) { 
+                let d = getDistanceFromLatLonInKm(taxiLat, taxiLon, position.coords.latitude, position.coords.longitude); 
+                // Actualiza la distancia incluso si solo te mueves 1 metro
+                if (d > 0.001) { 
+                    taxiDist += d; 
+                    document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;font-weight:normal;'>km</span>"; 
+                } 
+            }
             taxiLat = position.coords.latitude; taxiLon = position.coords.longitude; 
         }, (err) => { 
-            // NUEVO: Manejo de errores de GPS visible en pantalla
-            if(err.code === 1) { alert("⚠️ GPS Denegado: La aplicación no tiene permisos de ubicación."); }
+            if(err.code === 1) { alert("⚠️ GPS Denegado: La app no tiene permisos de ubicación."); }
             else if(err.code === 2) { alert("⚠️ GPS Inactivo: Enciende la ubicación de tu teléfono."); }
             else { alert("⚠️ Error de GPS: " + err.message); }
         }, { enableHighAccuracy: true });
