@@ -13,7 +13,6 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3448/3448339.png">
     <link rel="manifest" href="manifest.json">
     
-    <!-- LIBRERÍAS DE MAPA (OpenStreetMap) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
@@ -47,11 +46,11 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .fab { position: fixed; bottom: 85px; right: 20px; background: var(--text); color: var(--card); width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 1001; }
+        .fab { position: fixed; bottom: 85px; right: 20px; background: var(--text); color: var(--card); width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 1001; cursor: pointer; }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; position: relative; border: 1px solid var(--border); }
-        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; color: gray; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; color: gray; cursor: pointer;}
 
         .lista-carreras { background: transparent; border-radius: 10px; padding: 0; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
         .carrera-item { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 10px 0; align-items: center; }
@@ -65,7 +64,7 @@
         .progress-container { background: var(--bg); border-radius: 6px; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--border); }
         .progress-bar { height: 100%; width: 0%; transition: width 1s ease-in-out; }
 
-        .btn { width: 100%; padding: 15px; border-radius: 12px; font-weight: 600; border: none; margin-top: 10px; font-size: 1rem; background: var(--text); color: var(--card); }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; font-weight: 600; border: none; margin-top: 10px; font-size: 1rem; background: var(--text); color: var(--card); cursor: pointer;}
         .btn-save { background: var(--text); color: var(--card); }
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;}
@@ -119,13 +118,15 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.17 • COMPLETA Y RESTAURADA</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.18 • ESTABLE</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
 
+<!-- BOTÓN FLOTANTE CORREGIDO -->
 <div class="fab" onclick="abrirModal()">+</div>
 
+<!-- MODAL CORREGIDO -->
 <div id="modal_carrera" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="cerrarModal()">×</span>
@@ -141,7 +142,6 @@
 </div>
 
 <div class="container">
-    <!-- PESTAÑA REGISTRO -->
     <div id="tab_registro" class="tab-content active">
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -194,7 +194,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA FINANZAS -->
     <div id="tab_finanzas" class="tab-content">
         <div class="card">
             <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; text-align:center;">Rendimiento <span id="lbl_anio_actual"></span></h3>
@@ -213,7 +212,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA TAXÍMETRO -->
     <div id="tab_taximetro" class="tab-content">
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -269,9 +267,6 @@
         </div>
     </div>
 
-    <!-- RESTAURACIÓN DE LAS PESTAÑAS COMPLETAS (FLOTA, CLIENTES, MINISTERIO, HISTORIAL) -->
-    
-    <!-- PESTAÑA FLOTA (Operaciones) -->
     <div id="tab_operaciones" class="tab-content">
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -311,10 +306,9 @@
         </div>
     </div>
 
-    <!-- PESTAÑA CLIENTES -->
     <div id="tab_clientes" class="tab-content">
         <div class="card" style="border: 1px solid var(--save); background:rgba(217, 119, 6, 0.05);">
-            <h3 style="font-size:0.85rem; color:var(--save); text-transform:uppercase;">⭐ Directorio VIP (Sin Comisión)</h3>
+            <h3 style="font-size:0.85rem; color:var(--save); text-transform:uppercase;">⭐ Directorio VIP</h3>
             <div class="stats-grid" style="margin-bottom:0;">
                 <div><label style="font-size:0.65rem; color:gray;">Apodo</label><input type="text" id="vip_nombre" placeholder="Ej: Juan Clínica"></div>
                 <div><label style="font-size:0.65rem; color:gray;">Número (Ecuador)</label><input type="tel" id="vip_tel" placeholder="Ej: 0987654321"></div>
@@ -331,7 +325,6 @@
         </div>
     </div>
     
-    <!-- PESTAÑA MINISTERIO -->
     <div id="tab_ministerio" class="tab-content">
         <div class="card">
             <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin-bottom:15px;">📖 Ministerio Público</h3>
@@ -346,7 +339,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA HISTORIAL -->
     <div id="tab_historial" class="tab-content">
         <div class="card" id="contenedor_historial"></div>
     </div>
@@ -367,6 +359,7 @@
 
     function abrirMenu() { document.getElementById("miMenuLateral").style.width = "250px"; document.getElementById("overlay_menu").classList.add("active"); }
     function cerrarMenu() { document.getElementById("miMenuLateral").style.width = "0"; document.getElementById("overlay_menu").classList.remove("active"); }
+    
     function cambiarTab(tabId, btn) { 
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); 
@@ -381,9 +374,23 @@
             }, 300);
         }
     }
+    
     function abrirTabDesdeMenu(tabId) { cerrarMenu(); cambiarTab(tabId, null); if(tabId==='tab_clientes') buscarCliente(); }
     function toggleMode() { document.body.classList.toggle('dark-mode'); localStorage.setItem('ruta360_mode', document.body.classList.contains('dark-mode')); }
     function obtenerFechaLocal() { const tz = (new Date()).getTimezoneOffset() * 60000; return (new Date(Date.now() - tz)).toISOString().split('T')[0]; }
+
+    // --- FUNCIONES DEL MODAL CORREGIDAS ---
+    function abrirModal() { 
+        document.getElementById('modal_carrera').style.display = 'flex'; 
+        let now = new Date(); 
+        let h = now.getHours().toString().padStart(2,'0'); 
+        let m = now.getMinutes().toString().padStart(2,'0'); 
+        document.getElementById('hora_carrera').value = `${h}:${m}`; 
+        document.getElementById('concepto_carrera').value = ''; 
+    }
+    function cerrarModal() { 
+        document.getElementById('modal_carrera').style.display = 'none'; 
+    }
 
     window.limiteHistorial = 30; 
     function cargarMasHistorial() { window.limiteHistorial += 30; inicializar(); }
@@ -556,6 +563,10 @@
         try { if(localStorage.getItem('ruta360_mode') === 'true') toggleMode(); } catch(e){}
         refrescarBotonesPerfil(); seleccionarPerfil('A');
         document.getElementById('fecha_reg').value = obtenerFechaLocal(); cargarDatosDelDia();
+        
+        // ¡SOLUCIÓN 2!: Encendemos el dibujo de tus contactos VIP al cargar la app
+        renderVIP();
+        
         if(timerState === 'running') intervalReloj = setInterval(renderReloj, 1000); renderReloj();
         
         let configStr = localStorage.getItem('ruta360_config'); let config = configStr ? JSON.parse(configStr) : {"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0};
@@ -571,7 +582,26 @@
         
         db.forEach(r => { let partesFecha = r.completa.split('/'); let mes = partesFecha[1]; let anio = partesFecha[2]; tHTaxi+=(r.hTaxi||0); totalHPred += (r.hPred||0); if(!r.liquidadoFlota) { tGuardiaFlota += (r.gPagada !== undefined ? r.gPagada : 25); } if(r.hPred && r.hPred > 0) { htmlMinDetalle += `<div class="carrera-item" style="border-bottom:1px solid var(--border);"><span style="font-size:0.85rem;">📅 ${r.completa}</span><span style="font-weight:bold; color:var(--accent);">${r.hPred} hrs</span></div>`; } if(!aniosFiscales[anio]) aniosFiscales[anio] = { ingresos: 0, guardias: 0, ahorro: 0, neto: 0, hPred: 0 }; aniosFiscales[anio].ingresos += (r.ing || 0); aniosFiscales[anio].guardias += (r.gPagada !== undefined ? r.gPagada : 25); aniosFiscales[anio].ahorro += (r.ahorro || 0); aniosFiscales[anio].neto += (r.neto || 0); aniosFiscales[anio].hPred += (r.hPred || 0); if(anio === currentYear) { tN += r.neto; let mesClave = mes + '/' + anio; if(!mesesData[mesClave]) mesesData[mesClave] = { ingresos: 0, guardias: 0, ahorro: 0, neto: 0, gasolina: 0, hPred: 0, dias: 0 }; mesesData[mesClave].ingresos += (r.ing || 0); mesesData[mesClave].guardias += (r.gPagada !== undefined ? r.gPagada : 25); mesesData[mesClave].ahorro += (r.ahorro || 0); mesesData[mesClave].neto += (r.neto || 0); mesesData[mesClave].gasolina += (r.gas || 0); mesesData[mesClave].hPred += (r.hPred || 0); mesesData[mesClave].dias += 1; } });
         
-        try { document.getElementById('neto_total').innerText = "$" + tN.toFixed(2); document.getElementById('promedio_hora').innerText = "$" + (tHTaxi>0?tN/tHTaxi:0).toFixed(2) + "/hr"; let htmlMeses = ''; const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]; let clavesMeses = Object.keys(mesesData).reverse(); if(clavesMeses.length === 0) { htmlMeses = '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin datos en ' + currentYear + '</p>'; } else { clavesMeses.forEach(clave => { let numMes = parseInt(clave.split('/')[0]) - 1; let anio = clave.split('/')[1]; let mData = mesesData[clave]; let gastoCelularMensual = mD.dias * CELULAR; htmlMeses += `<div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:12px; border-left:4px solid var(--accent);"><h4 style="margin:0 0 10px 0; font-size:0.85rem; color:var(--text);">${nombresMeses[numMes]} ${anio}</h4><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ingreso Bruto</span> <b>$${mData.ingresos.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Guardias Pagadas</span> <b style="color:var(--danger);">-$${mData.guardias.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Combustible</span> <b style="color:var(--danger);">-$${mData.gasolina.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Plan Celular (${mData.dias} días)</span> <b style="color:var(--danger);">-$${gastoCelularMensual.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ahorro a la Caja</span> <b style="color:var(--save);">+$${mData.ahorro.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; color:var(--text);"><span>Ganancia Neta</span> <b>$${mData.neto.toFixed(2)}</b></div></div>`; }); } document.getElementById('lista_meses_finanzas').innerHTML = htmlMeses; } catch(e) {}
+        try { 
+            document.getElementById('neto_total').innerText = "$" + tN.toFixed(2); 
+            document.getElementById('promedio_hora').innerText = "$" + (tHTaxi>0?tN/tHTaxi:0).toFixed(2) + "/hr"; 
+            let htmlMeses = ''; const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]; 
+            let clavesMeses = Object.keys(mesesData).reverse(); 
+            if(clavesMeses.length === 0) { htmlMeses = '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin datos en ' + currentYear + '</p>'; } 
+            else { 
+                clavesMeses.forEach(clave => { 
+                    let numMes = parseInt(clave.split('/')[0]) - 1; 
+                    let anio = clave.split('/')[1]; 
+                    let mData = mesesData[clave]; 
+                    
+                    // ¡SOLUCIÓN 1!: Aquí estaba el error. Cambié mD.dias por mData.dias
+                    let gastoCelularMensual = mData.dias * CELULAR; 
+                    
+                    htmlMeses += `<div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:12px; border-left:4px solid var(--accent);"><h4 style="margin:0 0 10px 0; font-size:0.85rem; color:var(--text);">${nombresMeses[numMes]} ${anio}</h4><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ingreso Bruto</span> <b>$${mData.ingresos.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Guardias Pagadas</span> <b style="color:var(--danger);">-$${mData.guardias.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Combustible</span> <b style="color:var(--danger);">-$${mData.gasolina.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Plan Celular (${mData.dias} días)</span> <b style="color:var(--danger);">-$${gastoCelularMensual.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ahorro a la Caja</span> <b style="color:var(--save);">+$${mData.ahorro.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; color:var(--text);"><span>Ganancia Neta</span> <b>$${mData.neto.toFixed(2)}</b></div></div>`; 
+                }); 
+            } 
+            document.getElementById('lista_meses_finanzas').innerHTML = htmlMeses; 
+        } catch(e) {}
         
         try { document.getElementById('total_h_pred').innerText = totalHPred + " hrs"; let htmlMin = ''; let clavesMeses = Object.keys(mesesData).reverse(); const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]; if(clavesMeses.length === 0) htmlMin = '<p style="text-align:center; font-size:0.75rem; color:gray;">Aún no hay horas registradas.</p>'; else { clavesMeses.forEach(clave => { let hP = mesesData[clave].hPred || 0; if(hP > 0) { let numMes = parseInt(clave.split('/')[0]) - 1; let anio = clave.split('/')[1]; htmlMin += `<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px;"><span style="font-weight:600; color:var(--text); font-size:0.85rem;">${nombresMeses[numMes]} ${anio}</span><span style="font-weight:300; font-size:1.2rem; color:var(--accent);">${hP} hrs</span></div>`; } }); if(htmlMin === '') htmlMin = '<p style="text-align:center; font-size:0.75rem; color:gray;">No se registraron horas este año.</p>'; } document.getElementById('lista_ministerio').innerHTML = htmlMin; if(htmlMinDetalle === '') htmlMinDetalle = '<p style="text-align:center; font-size:0.75rem; color:gray;">Aún no hay registros diarios.</p>'; document.getElementById('lista_ministerio_detalle').innerHTML = htmlMinDetalle; } catch(e) {}
 
