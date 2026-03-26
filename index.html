@@ -58,7 +58,7 @@
 
         .reloj-container { font-family: monospace; font-size: 2.5rem; text-align: center; padding: 10px; font-weight: 300; }
         .btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
-        .btn-timer { flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        .btn-timer { flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor:pointer;}
         .btn-timer.active-start { background: var(--accent); color: white; border: none;}
         
         .progress-container { background: var(--bg); border-radius: 6px; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--border); }
@@ -82,7 +82,7 @@
         .taxi-metrics span { font-size: 1.1rem; color: var(--text); font-weight: 600; margin-top: 2px; }
         
         .perfil-grupo { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; background: var(--bg); padding: 5px; border-radius: 12px; border: 1px solid var(--border);}
-        .btn-perfil { flex: 1; min-width: 60px; padding: 10px 2px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; border: none; background: transparent; color: gray; }
+        .btn-perfil { flex: 1; min-width: 60px; padding: 10px 2px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; border: none; background: transparent; color: gray; cursor:pointer;}
         .btn-perfil.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         
         .health-grid { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 15px; }
@@ -118,15 +118,13 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.19 • REGISTROS REPARADOS</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.20 • EDICIÓN Y PAUSA</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
 
-<!-- BOTÓN FLOTANTE -->
 <div class="fab" onclick="abrirModal()">+</div>
 
-<!-- MODAL DE VIAJE -->
 <div id="modal_carrera" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="cerrarModal()">×</span>
@@ -166,11 +164,11 @@
                 <div class="health-btn" id="btn_ejercicio" onclick="toggleHealth('ejercicio')"><span class="health-icon">🏃</span><span class="health-label">Pausas</span></div>
             </div>
 
-            <div style="padding: 10px; background:var(--bg); border-radius: 8px; margin-bottom: 15px; border:1px solid var(--border);">
-                <label style="font-size:0.75rem; font-weight:600; display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="exonerar_guardia" style="width:18px; height:18px; margin:0;"> Hoy NO pago Guardia
-                </label>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg); border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
+                <label style="font-size:0.75rem; font-weight:600; color:var(--text);">🛡️ Guardia de hoy ($):</label>
+                <input type="number" id="val_guardia" value="25" step="0.5" style="width:80px; margin:0; text-align:center; padding:8px;">
             </div>
+
             <div class="stats-grid">
                 <div><label style="font-size:0.6rem; color:gray; text-transform:uppercase;">Horas Taxi</label><input type="number" id="h_taxi" step="0.01"></div>
                 <div><label style="font-size:0.6rem; color:gray; text-transform:uppercase;">Horas App/Est.</label><input type="number" id="h_pred" step="0.5"></div>
@@ -248,7 +246,11 @@
             </div>
 
             <button class="btn" style="background:var(--success); font-size:1.1rem; padding:18px;" id="btn_taxi_start" onclick="iniciarTaxi()">Iniciar Viaje</button>
-            <button class="btn" style="background:var(--danger); font-size:1.1rem; padding:18px; display:none;" id="btn_taxi_stop" onclick="detenerTaxi()">Finalizar y Cobrar</button>
+            
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:var(--accent); font-size:1rem; padding:15px; display:none; flex:1;" id="btn_taxi_pause" onclick="pausarTaxi()">⏸️ Pausar</button>
+                <button class="btn" style="background:var(--danger); font-size:1rem; padding:15px; display:none; flex:1;" id="btn_taxi_stop" onclick="detenerTaxi()">Finalizar y Cobrar</button>
+            </div>
         </div>
 
         <div class="card" style="background: rgba(37, 99, 235, 0.05); border: 1px solid var(--accent);">
@@ -352,9 +354,8 @@
 </div>
 
 <script>
-    const GUARDIA = 25, CELULAR = 1, CICLO_M = 5000;
+    const CELULAR = 1, CICLO_M = 5000;
     
-    // --- LÓGICA DE UI Y MAPA ---
     let map = null, markerDestino = null, currentPosMarker = null;
 
     function abrirMenu() { document.getElementById("miMenuLateral").style.width = "250px"; document.getElementById("overlay_menu").classList.add("active"); }
@@ -379,7 +380,6 @@
     function toggleMode() { document.body.classList.toggle('dark-mode'); localStorage.setItem('ruta360_mode', document.body.classList.contains('dark-mode')); }
     function obtenerFechaLocal() { const tz = (new Date()).getTimezoneOffset() * 60000; return (new Date(Date.now() - tz)).toISOString().split('T')[0]; }
 
-    // --- FUNCIONES DEL MODAL ---
     function abrirModal() { 
         document.getElementById('modal_carrera').style.display = 'flex'; 
         let now = new Date(); 
@@ -388,9 +388,7 @@
         document.getElementById('hora_carrera').value = `${h}:${m}`; 
         document.getElementById('concepto_carrera').value = ''; 
     }
-    function cerrarModal() { 
-        document.getElementById('modal_carrera').style.display = 'none'; 
-    }
+    function cerrarModal() { document.getElementById('modal_carrera').style.display = 'none'; }
 
     window.limiteHistorial = 30; 
     function cargarMasHistorial() { window.limiteHistorial += 30; inicializar(); }
@@ -398,12 +396,12 @@
     let saludDia = { agua: false, postura: false, ejercicio: false };
     function toggleHealth(tipo) { saludDia[tipo] = !saludDia[tipo]; let btn = document.getElementById('btn_' + tipo); if (saludDia[tipo]) { btn.classList.add('active'); } else { btn.classList.remove('active'); } }
 
-    function exportarBackup() { let data = { 'ruta360_db': localStorage.getItem('ruta360_db') || '[]', 'ruta360_viajes': localStorage.getItem('ruta360_viajes') || '[]', 'ruta360_gastos_op': localStorage.getItem('ruta360_gastos_op') || '[]', 'ruta360_config': localStorage.getItem('ruta360_config') || '{}', 'ruta360_contador_viajes': localStorage.getItem('ruta360_contador_viajes') || '0', 'ruta360_taxi_multi': localStorage.getItem('ruta360_taxi_multi') || 'null', 'ruta360_contactos': localStorage.getItem('ruta360_contactos') || '[]' }; let blob = new Blob([JSON.stringify(data)], {type: "application/json"}); let link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Ruta360_Respaldo.json"; link.click(); cerrarMenu(); alert("✅ Respaldo descargado."); }
-    function importarBackup(event) { let file = event.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = function(e) { try { let data = JSON.parse(e.target.result); if(data['ruta360_db']) localStorage.setItem('ruta360_db', data['ruta360_db']); if(data['ruta360_viajes']) localStorage.setItem('ruta360_viajes', data['ruta360_viajes']); if(data['ruta360_gastos_op']) localStorage.setItem('ruta360_gastos_op', data['ruta360_gastos_op']); if(data['ruta360_config']) localStorage.setItem('ruta360_config', data['ruta360_config']); if(data['ruta360_contador_viajes']) localStorage.setItem('ruta360_contador_viajes', data['ruta360_contador_viajes']); if(data['ruta360_taxi_multi']) localStorage.setItem('ruta360_taxi_multi', data['ruta360_taxi_multi']); if(data['ruta360_contactos']) localStorage.setItem('ruta360_contactos', data['ruta360_contactos']); alert("🎉 ¡Datos restaurados!"); location.reload(); } catch(err) { alert("⚠️ Archivo corrupto."); } }; reader.readAsText(file); }
+    function exportarBackup() { let data = { 'ruta360_db': localStorage.getItem('ruta360_db') || '[]', 'ruta360_viajes': localStorage.getItem('ruta360_viajes') || '[]', 'ruta360_gastos_op': localStorage.getItem('ruta360_gastos_op') || '[]', 'ruta360_config': localStorage.getItem('ruta360_config') || '{}', 'ruta360_contador_viajes': localStorage.getItem('ruta360_contador_viajes') || '0', 'ruta360_taxi_multi': localStorage.getItem('ruta360_taxi_multi') || 'null', 'ruta360_contactos': localStorage.getItem('ruta360_contactos') || '[]', 'ruta360_historial_taxi': localStorage.getItem('ruta360_historial_taxi') || '[]' }; let blob = new Blob([JSON.stringify(data)], {type: "application/json"}); let link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Ruta360_Respaldo.json"; link.click(); cerrarMenu(); alert("✅ Respaldo descargado."); }
+    function importarBackup(event) { let file = event.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = function(e) { try { let data = JSON.parse(e.target.result); if(data['ruta360_db']) localStorage.setItem('ruta360_db', data['ruta360_db']); if(data['ruta360_viajes']) localStorage.setItem('ruta360_viajes', data['ruta360_viajes']); if(data['ruta360_gastos_op']) localStorage.setItem('ruta360_gastos_op', data['ruta360_gastos_op']); if(data['ruta360_config']) localStorage.setItem('ruta360_config', data['ruta360_config']); if(data['ruta360_contador_viajes']) localStorage.setItem('ruta360_contador_viajes', data['ruta360_contador_viajes']); if(data['ruta360_taxi_multi']) localStorage.setItem('ruta360_taxi_multi', data['ruta360_taxi_multi']); if(data['ruta360_contactos']) localStorage.setItem('ruta360_contactos', data['ruta360_contactos']); if(data['ruta360_historial_taxi']) localStorage.setItem('ruta360_historial_taxi', data['ruta360_historial_taxi']); alert("🎉 ¡Datos restaurados!"); location.reload(); } catch(err) { alert("⚠️ Archivo corrupto."); } }; reader.readAsText(file); }
 
-    function guardarVIP() { let nom = document.getElementById('vip_nombre').value.trim(); let tel = document.getElementById('vip_tel').value.trim().replace(/[^0-9]/g,''); if(!nom || !tel) return alert("Por favor, ingresa un apodo y un número."); let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos.push({id: Date.now(), nom: nom, tel: tel}); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); document.getElementById('vip_nombre').value = ''; document.getElementById('vip_tel').value = ''; renderVIP(); }
-    function borrarVIP(id) { if(confirm("¿Seguro que quieres borrar este contacto?")){ let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos = contactos.filter(c => c.id !== id); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); renderVIP(); } }
-    function renderVIP() { let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); let div = document.getElementById('lista_vip'); div.innerHTML = ''; if(contactos.length === 0) { div.innerHTML = '<p style="text-align:center; font-size:0.75rem; color:gray;">No tienes contactos VIP guardados.</p>'; return; } contactos.forEach(c => { let waNum = c.tel.startsWith('0') ? '593' + c.tel.substring(1) : c.tel; div.innerHTML += `<div class="carrera-item" style="border-bottom: 1px solid var(--border); padding: 12px 0;"><div><b>${c.nom}</b><br><span style="font-size:0.75rem; color:gray;">${c.tel}</span></div><div style="display:flex; gap:8px; align-items:center;"><a href="tel:${c.tel}" style="text-decoration:none; background:var(--bg); color:var(--text); padding:8px 12px; border-radius:8px; border:1px solid var(--border); font-size:1.2rem;">📞</a><a href="https://wa.me/${waNum}" target="_blank" style="text-decoration:none; background:#25D366; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; font-size:0.8rem; border:none;">WhatsApp</a><span onclick="borrarVIP(${c.id})" style="cursor:pointer; color:var(--danger); margin-left:5px; font-size:1.5rem; line-height:1;">×</span></div></div>`; }); }
+    function guardarVIP() { let nom = document.getElementById('vip_nombre').value.trim(); let tel = document.getElementById('vip_tel').value.trim().replace(/[^0-9]/g,''); if(!nom || !tel) return alert("Ingresa un apodo y un número."); let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos.push({id: Date.now(), nom: nom, tel: tel}); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); document.getElementById('vip_nombre').value = ''; document.getElementById('vip_tel').value = ''; renderVIP(); }
+    function borrarVIP(id) { if(confirm("¿Borrar contacto?")){ let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos = contactos.filter(c => c.id !== id); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); renderVIP(); } }
+    function renderVIP() { let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); let div = document.getElementById('lista_vip'); div.innerHTML = ''; if(contactos.length === 0) { div.innerHTML = '<p style="text-align:center; font-size:0.75rem; color:gray;">No tienes contactos VIP guardados.</p>'; return; } contactos.forEach(c => { let waNum = c.tel.startsWith('0') ? '593' + c.tel.substring(1) : c.tel; div.innerHTML += `<div class="carrera-item"><div><b>${c.nom}</b><br><span style="font-size:0.75rem; color:gray;">${c.tel}</span></div><div style="display:flex; gap:8px; align-items:center;"><a href="tel:${c.tel}" style="text-decoration:none; background:var(--bg); color:var(--text); padding:8px 12px; border-radius:8px; border:1px solid var(--border); font-size:1.2rem;">📞</a><a href="https://wa.me/${waNum}" target="_blank" style="text-decoration:none; background:#25D366; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; font-size:0.8rem; border:none;">WhatsApp</a><span onclick="borrarVIP(${c.id})" style="cursor:pointer; color:var(--danger); margin-left:5px; font-size:1.5rem;">×</span></div></div>`; }); }
 
     let perfilActivo = 'A';
     let perfilesDefecto = { 'A': { base: 1.00, km: 0.35, min: 0.05, nombre: "☀️ Día" }, 'B': { base: 1.00, km: 0.40, min: 0.05, nombre: "🌙 Noche" }, 'C': { base: 1.00, km: 0.30, min: 0.03, nombre: "⭐ VIP" }, 'D': { base: 1.50, km: 0.25, min: 0.05, nombre: "🛣️ Viaje" }, 'E': { base: 1.25, km: 0.45, min: 0.08, nombre: "🌧️ Lluvia" } };
@@ -446,33 +444,58 @@
     let taxiDist = 0, taxiWaitSecs = 0, taxiTimeTotal = 0, taxiInterval = null; 
     let taxiPriceFinal = 0.00; let taxiLastTick = 0; 
     let estaDetenido = true; let lastGpsTime = 0;
+    
+    // NUEVA VARIABLE DE PAUSA
+    let isTaxiPaused = false; 
 
     function toggleTarifas() { let c = document.getElementById('config_tarifas'); c.style.display = c.style.display === 'none' ? 'block' : 'none'; }
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) { var R = 6371; var dLat = (lat2-lat1) * (Math.PI/180); var dLon = (lon2-lon1) * (Math.PI/180); var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 
+    // Función modificada para inicio fresco o reanudación
     function iniciarTaxi() {
         if (!navigator.geolocation) return alert("Sin GPS.");
         lockScreen(); 
         taxiDist = 0; taxiWaitSecs = 0; taxiTimeTotal = 0; taxiLat = null; taxiLon = null; 
         taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now();
+        isTaxiPaused = false;
+        arrancarMotorTaxi();
+    }
+    
+    function arrancarMotorTaxi() {
+        document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; 
+        actualizarPrecioTaxi(); 
         
-        document.getElementById('taxi_distancia').innerHTML = "0.00<span style='font-size:0.7rem;'>km</span>"; 
-        actualizarPrecioTaxi(); document.getElementById('btn_taxi_start').style.display = 'none'; document.getElementById('btn_taxi_stop').style.display = 'block';
+        document.getElementById('btn_taxi_start').style.display = 'none'; 
+        document.getElementById('btn_taxi_stop').style.display = 'block';
+        document.getElementById('btn_taxi_pause').style.display = 'block';
+        document.getElementById('btn_taxi_pause').innerText = "⏸️ Pausar";
+        document.getElementById('btn_taxi_pause').style.background = "var(--accent)";
         
+        if(taxiInterval) clearInterval(taxiInterval);
         taxiInterval = setInterval(() => {
             let now = Date.now(); let deltaSecs = (now - taxiLastTick) / 1000; taxiLastTick = now;
-            taxiTimeTotal += deltaSecs; 
-            if (deltaSecs <= 2.0 && estaDetenido) taxiWaitSecs += deltaSecs; 
-            actualizarPrecioTaxi();
+            
+            // Si NO está en pausa, suma el tiempo
+            if(!isTaxiPaused) {
+                taxiTimeTotal += deltaSecs; 
+                if (deltaSecs <= 2.0 && estaDetenido) taxiWaitSecs += deltaSecs; 
+                actualizarPrecioTaxi();
+            }
+            
             document.getElementById('taxi_tiempo').innerText = `${Math.floor(taxiTimeTotal/60).toString().padStart(2,'0')}:${Math.floor(taxiTimeTotal%60).toString().padStart(2,'0')}`;
             document.getElementById('taxi_espera').innerText = `${Math.floor(taxiWaitSecs/60).toString().padStart(2,'0')}:${Math.floor(taxiWaitSecs%60).toString().padStart(2,'0')}`;
         }, 1000);
         
+        if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId);
         taxiWatchId = navigator.geolocation.watchPosition((position) => {
             let lat = position.coords.latitude; let lon = position.coords.longitude; let speed = position.coords.speed; let nowTime = Date.now();
             if (taxiLat !== null) { 
                 let dKm = getDistanceFromLatLonInKm(taxiLat, taxiLon, lat, lon); 
-                if (dKm * 1000 > 1.0) { taxiDist += dKm; document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; } 
+                // Si NO está en pausa, suma la distancia
+                if (!isTaxiPaused && (dKm * 1000 > 1.0)) { 
+                    taxiDist += dKm; 
+                    document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; 
+                } 
                 if (speed !== null) estaDetenido = (speed < 0.5); else estaDetenido = ((dKm*1000) / ((nowTime - lastGpsTime)/1000) < 0.5);
             }
             taxiLat = lat; taxiLon = lon; lastGpsTime = nowTime;
@@ -480,29 +503,44 @@
         }, (err) => {}, { enableHighAccuracy: true });
     }
 
+    // NUEVA FUNCIÓN DE PAUSA
+    function pausarTaxi() {
+        isTaxiPaused = !isTaxiPaused;
+        let btnPausa = document.getElementById('btn_taxi_pause');
+        if(isTaxiPaused) {
+            btnPausa.innerText = "▶️ Reanudar";
+            btnPausa.style.background = "var(--save)";
+        } else {
+            btnPausa.innerText = "⏸️ Pausar";
+            btnPausa.style.background = "var(--accent)";
+            taxiLastTick = Date.now(); // Resetea el reloj interno para no sumar de golpe
+            lastGpsTime = Date.now();
+        }
+    }
+
     function actualizarPrecioTaxi() { let p = cargarPerfiles()[perfilActivo]; taxiPriceFinal = p.base + (taxiDist * p.km) + ((taxiWaitSecs/60) * p.min); document.getElementById('taxi_precio').innerText = "$" + taxiPriceFinal.toFixed(2); }
     
     function detenerTaxi() { 
         unlockScreen(); clearInterval(taxiInterval); if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId); 
-        document.getElementById('btn_taxi_stop').style.display = 'none'; document.getElementById('btn_taxi_start').style.display = 'block'; 
+        document.getElementById('btn_taxi_stop').style.display = 'none'; 
+        document.getElementById('btn_taxi_pause').style.display = 'none'; 
+        document.getElementById('btn_taxi_start').style.display = 'block'; 
         abrirModal(); 
         
         let perfilSelec = cargarPerfiles()[perfilActivo];
         document.getElementById('monto_carrera').value = taxiPriceFinal.toFixed(2); 
         document.getElementById('concepto_carrera').value = perfilSelec.nombre; 
         document.getElementById('concepto_carrera').focus(); 
-        guardarHistorialTaxiLocal(perfilSelec.nombre, taxiDist.toFixed(2), taxiPriceFinal.toFixed(2));
+        
+        // Guardamos los segundos exactos para poder reanudar el viaje en el futuro
+        guardarHistorialTaxiLocal(perfilSelec.nombre, taxiDist.toFixed(2), taxiPriceFinal.toFixed(2), taxiTimeTotal, taxiWaitSecs);
     }
 
-    // --- MÓDULO: MAPAS Y CALCULADORA (CARTO VOYAGER) ---
+    // --- MÓDULO: MAPAS Y CALCULADORA ---
     function initMapaLeaflet() {
         let latBase = -3.2586; let lonBase = -79.9553; 
         map = L.map('mapa_calculadora').setView([latBase, lonBase], 13);
-        
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-            attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 
-        }).addTo(map);
-        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(map);
         currentPosMarker = L.circleMarker([latBase, lonBase], {color: 'blue', radius: 6}).addTo(map);
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -529,21 +567,86 @@
         document.getElementById('calc_precio').innerText = "$" + costo.toFixed(2);
     }
 
-    function guardarHistorialTaxiLocal(perfil, km, monto) { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let f = new Date(); let horaStr = f.getHours().toString().padStart(2,'0') + ":" + f.getMinutes().toString().padStart(2,'0'); h.unshift({ hora: horaStr, fecha: obtenerFechaLocal(), perfil: perfil, km: km, monto: monto }); if(h.length > 20) h.pop(); localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h)); renderHistorialTaxi(); }
-    function renderHistorialTaxi() { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let div = document.getElementById('historial_taxi_local'); div.innerHTML = ''; if(h.length === 0) { div.innerHTML = '<p style="text-align:center; color:gray; font-size:0.7rem;">Tus próximos viajes del taxímetro aparecerán aquí.</p>'; return; } h.forEach(v => { div.innerHTML += `<div class="carrera-item"><div><b>${v.perfil}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} • ${v.hora} | Recorrido: ${v.km} km</span></div><div style="font-weight:bold; color:var(--text);">$${v.monto}</div></div>`; }); }
+    // --- HISTORIAL TAXÍMETRO REPARADO CON BORRADO Y REANUDAR ---
+    function guardarHistorialTaxiLocal(perfil, km, monto, timeTotal, waitTotal) { 
+        let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); 
+        let f = new Date(); let horaStr = f.getHours().toString().padStart(2,'0') + ":" + f.getMinutes().toString().padStart(2,'0'); 
+        h.unshift({ hora: horaStr, fecha: obtenerFechaLocal(), perfil: perfil, km: km, monto: monto, timeTotal: timeTotal, waitTotal: waitTotal }); 
+        if(h.length > 20) h.pop(); 
+        localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h)); 
+        renderHistorialTaxi(); 
+    }
+    
+    function borrarHistorialTaxi(idx) {
+        if(confirm("¿Borrar este registro del taxímetro?")) {
+            let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]');
+            h.splice(idx, 1);
+            localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h));
+            renderHistorialTaxi();
+        }
+    }
+    
+    function reanudarDesdeHistorial(idx) {
+        if(!navigator.geolocation) return alert("Sin GPS.");
+        let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]');
+        let item = h[idx];
+        
+        // Buscar el perfil correspondiente por nombre
+        let perfiles = cargarPerfiles();
+        for(let key in perfiles) {
+            if(perfiles[key].nombre === item.perfil) seleccionarPerfil(key);
+        }
+        
+        // Cargar los datos matemáticos
+        taxiDist = parseFloat(item.km) || 0;
+        taxiTimeTotal = item.timeTotal || 0;
+        taxiWaitSecs = item.waitTotal || 0;
+        taxiLat = null; taxiLon = null;
+        taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now();
+        
+        lockScreen();
+        arrancarMotorTaxi();
+        
+        // Ponerlo en pausa por defecto para que estés listo antes de arrancar
+        isTaxiPaused = false; 
+        pausarTaxi(); 
+        window.scrollTo(0, 0); // Sube la pantalla al taxímetro
+    }
+    
+    function renderHistorialTaxi() { 
+        let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); 
+        let div = document.getElementById('historial_taxi_local'); div.innerHTML = ''; 
+        if(h.length === 0) { div.innerHTML = '<p style="text-align:center; color:gray; font-size:0.7rem;">Tus próximos viajes aparecerán aquí.</p>'; return; } 
+        h.forEach((v, idx) => { 
+            div.innerHTML += `<div class="carrera-item">
+                <div style="width:55%;"><b>${v.perfil}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} • ${v.hora} | ${v.km} km</span></div>
+                <div style="font-weight:bold; color:var(--text);">$${v.monto}</div>
+                <div style="display:flex; gap:5px;">
+                    <button style="background:var(--save); border:none; color:white; border-radius:6px; padding:5px 8px; font-size:0.7rem; cursor:pointer;" onclick="reanudarDesdeHistorial(${idx})">▶️</button>
+                    <button style="background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" onclick="borrarHistorialTaxi(${idx})">×</button>
+                </div>
+            </div>`; 
+        }); 
+    }
 
-    // --- GUARDADO DE CARRERAS (REPARADO) ---
+    // --- GUARDADO DE CARRERAS (CORRELATIVO ARREGLADO) ---
     function guardarCarrera() { 
         let monto = parseFloat(document.getElementById('monto_carrera').value); 
         if(isNaN(monto) || monto <= 0) return alert("Ingresa un valor válido."); 
+        
+        let numCorrelativo = parseInt(localStorage.getItem('ruta360_contador_viajes') || '0') + 1; 
+        localStorage.setItem('ruta360_contador_viajes', numCorrelativo); 
+        
         let concepto = document.getElementById('concepto_carrera').value.trim(); 
+        if(concepto === "") { concepto = "Carrera #" + String(numCorrelativo).padStart(6, '0'); } 
+        
         let horaViaje = document.getElementById('hora_carrera').value; 
-        let numCorrelativo = Date.now(); 
-        if(concepto === "") { concepto = "Carrera"; } 
         let fechaActual = document.getElementById('fecha_reg').value; 
         let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
+        
         viajes.push({ id: numCorrelativo, fecha: fechaActual, hora: horaViaje, monto: monto, concepto: concepto }); 
         localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); 
+        
         try{document.getElementById('sonidoBeep').play();}catch(e){} 
         cerrarModal(); 
         document.getElementById('monto_carrera').value = ''; 
@@ -570,15 +673,13 @@
         listaHtml.innerHTML = ''; 
         for(let i = viajes.length - 1; i >= 0; i--) { 
             if(viajes[i].fecha === fechaActual) { 
-                total += viajes[i].monto; 
-                conteo++; 
+                total += viajes[i].monto; conteo++; 
                 let hr = viajes[i].hora ? `<b style="font-size:0.7rem; color:gray;">${viajes[i].hora}</b> ` : ''; 
                 listaHtml.innerHTML += `<div class="carrera-item"><span style="font-size:0.8rem;">🚕 ${hr}${viajes[i].concepto}</span><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${viajes[i].monto.toFixed(2)}</span><span onclick="borrarCarrera(${viajes[i].id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; 
             } 
         } 
         document.getElementById('contador_carreras').innerText = `${conteo} Viajes`; 
-        if(total > 0) document.getElementById('cash').value = total.toFixed(2); 
-        else document.getElementById('cash').value = ''; 
+        if(total > 0) document.getElementById('cash').value = total.toFixed(2); else document.getElementById('cash').value = ''; 
     }
 
     function cargarDatosDelDia() { 
@@ -592,35 +693,30 @@
             document.getElementById('km_gps').value = rG.km || ''; 
             document.getElementById('gas').value = rG.gas || ''; 
             document.getElementById('save_val').value = rG.ahorro || 5; 
-            document.getElementById('exonerar_guardia').checked = (rG.gPagada === 0); 
+            
+            // LÓGICA DE GUARDIA EDITABLE
+            document.getElementById('val_guardia').value = (rG.gPagada !== undefined) ? rG.gPagada : 25; 
+            
             if(rG.salud && rG.salud.length === 3) { 
                 saludDia = {agua: rG.salud[0], postura: rG.salud[1], ejercicio: rG.salud[2]}; 
                 ['agua','postura','ejercicio'].forEach(t => { let b = document.getElementById('btn_'+t); if(saludDia[t]) b.classList.add('active'); else b.classList.remove('active'); }); 
             } 
         } else { 
-            document.getElementById('h_taxi').value = ''; 
-            document.getElementById('h_pred').value = ''; 
-            document.getElementById('km_gps').value = ''; 
-            document.getElementById('gas').value = ''; 
-            document.getElementById('save_val').value = 5; 
-            document.getElementById('exonerar_guardia').checked = false; 
-            saludDia = {agua: false, postura: false, ejercicio: false}; 
-            ['agua','postura','ejercicio'].forEach(t => document.getElementById('btn_'+t).classList.remove('active')); 
+            document.getElementById('h_taxi').value = ''; document.getElementById('h_pred').value = ''; document.getElementById('km_gps').value = ''; document.getElementById('gas').value = ''; document.getElementById('save_val').value = 5; 
+            // NUEVO DÍA: Guardia por defecto (Domingo = 0, Otros = 25)
+            let fObj = new Date(f + 'T12:00:00');
+            document.getElementById('val_guardia').value = (fObj.getDay() === 0) ? 0 : 25;
+            
+            saludDia = {agua: false, postura: false, ejercicio: false}; ['agua','postura','ejercicio'].forEach(t => document.getElementById('btn_'+t).classList.remove('active')); 
         } 
     }
     
     function buscarCliente() { 
-        let txt = document.getElementById('buscador_cliente').value.toLowerCase(); 
-        let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
-        let res = document.getElementById('lista_busqueda'); 
-        let totalMonto = 0, totalViajes = 0; 
-        res.innerHTML = ''; 
-        let mostrados = 0; 
+        let txt = document.getElementById('buscador_cliente').value.toLowerCase(); let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let res = document.getElementById('lista_busqueda'); let totalMonto = 0, totalViajes = 0; res.innerHTML = ''; let mostrados = 0; 
         for(let i = viajes.length - 1; i >= 0; i--) { 
             let v = viajes[i]; 
             if(v.concepto.toLowerCase().includes(txt)) { 
-                totalMonto += v.monto; 
-                totalViajes++; 
+                totalMonto += v.monto; totalViajes++; 
                 if (mostrados < 50) { 
                     let hr = v.hora ? `${v.hora}` : ''; 
                     res.innerHTML += `<div class="carrera-item"><div><b>${v.concepto}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} ${hr}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${v.monto.toFixed(2)}</span><span onclick="borrarCarrera(${v.id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; 
@@ -628,12 +724,7 @@
                 } 
             } 
         } 
-        if(totalViajes > 0) { 
-            let limitMsg = totalViajes > 50 ? `<br><span style="font-size:0.65rem; color:gray;">Mostrando 50 de ${totalViajes} resultados.</span>` : ''; 
-            document.getElementById('resumen_cliente').innerHTML = `${totalViajes} viajes | Total: <b style="color:var(--text)">$${totalMonto.toFixed(2)}</b>${limitMsg}`; 
-        } else { 
-            document.getElementById('resumen_cliente').innerHTML = 'Sin resultados.'; 
-        } 
+        if(totalViajes > 0) { document.getElementById('resumen_cliente').innerHTML = `${totalViajes} viajes | Total: <b style="color:var(--text)">$${totalMonto.toFixed(2)}</b>`; } else { document.getElementById('resumen_cliente').innerHTML = 'Sin resultados.'; } 
     }
 
     function registrarGastoOp() { let m = parseFloat(document.getElementById('monto_gasto_op').value); let c = document.getElementById('concepto_gasto_op').value.trim(); if(isNaN(m) || m<=0 || c==="") return alert("Datos inválidos."); let g = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); g.push({ fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false }); localStorage.setItem('ruta360_gastos_op', JSON.stringify(g)); document.getElementById('monto_gasto_op').value = ''; document.getElementById('concepto_gasto_op').value = ''; inicializar(); }
@@ -651,7 +742,12 @@
     function reinicioMotor() { if(confirm("¿Cambio de aceite HOY?")) { let conf = JSON.parse(localStorage.getItem('ruta360_config')); conf.ultimoCambioAceite = conf.odometroGlobal || 0; conf.ciclosMotor += 1; localStorage.setItem('ruta360_config', JSON.stringify(conf)); location.reload(); } }
     function reinicioCaja() { let conf = JSON.parse(localStorage.getItem('ruta360_config')); conf.ciclosMotor = 0; localStorage.setItem('ruta360_config', JSON.stringify(conf)); location.reload(); }
 
-    function guardar() { document.getElementById('sonidoDinero').play(); let fActual = obtenerFechaLocal(); let fInput = document.getElementById('fecha_reg').value; if(fInput === fActual) { localStorage.setItem('t_state', 'stopped'); localStorage.setItem('t_start', '0'); localStorage.setItem('t_acum', '0'); } setTimeout(() => { const fObj = new Date(fInput + 'T12:00:00'); let fechaStr = `${fObj.getDate().toString().padStart(2,'0')}/${(fObj.getMonth()+1).toString().padStart(2,'0')}/${fObj.getFullYear()}`; const km = parseFloat(document.getElementById('km_gps').value) || 0; const ing = parseFloat(document.getElementById('cash').value) || 0; const gas = parseFloat(document.getElementById('gas').value) || 0; const ahorro = parseFloat(document.getElementById('save_val').value) || 0; const hTaxi = parseFloat(document.getElementById('h_taxi').value) || 0; const hPred = parseFloat(document.getElementById('h_pred').value) || 0; const exonera = document.getElementById('exonerar_guardia').checked; const salud = [saludDia.agua, saludDia.postura, saludDia.ejercicio]; let config = JSON.parse(localStorage.getItem('ruta360_config') || '{"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0}'); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let cobroGuardia = (!exonera && fObj.getDay() !== 0) ? GUARDIA : 0; const neto = ing - gas - cobroGuardia - ahorro - CELULAR; let nuevoRegistro = { completa: fechaStr, fecha: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][fObj.getDay()], neto, ahorro, ing, gas, km, hTaxi, hPred, salud, netoHora: (hTaxi>0 ? neto/hTaxi : 0), gPagada: cobroGuardia }; let index = db.findIndex(r => r.completa === fechaStr); if(index !== -1) { let kmViejo = (db[index].km || 0); config.odometroGlobal = (config.odometroGlobal || 0) - kmViejo + km; nuevoRegistro.liquidadoFlota = db[index].liquidadoFlota; db[index] = nuevoRegistro; } else { config.odometroGlobal = (config.odometroGlobal || 0) + km; db.push(nuevoRegistro); } localStorage.setItem('ruta360_config', JSON.stringify(config)); db.sort((a,b) => a.completa.split('/').reverse().join('').localeCompare(b.completa.split('/').reverse().join(''))); localStorage.setItem('ruta360_db', JSON.stringify(db)); location.reload(); }, 600); }
+    function guardar() { document.getElementById('sonidoDinero').play(); let fActual = obtenerFechaLocal(); let fInput = document.getElementById('fecha_reg').value; if(fInput === fActual) { localStorage.setItem('t_state', 'stopped'); localStorage.setItem('t_start', '0'); localStorage.setItem('t_acum', '0'); } setTimeout(() => { const fObj = new Date(fInput + 'T12:00:00'); let fechaStr = `${fObj.getDate().toString().padStart(2,'0')}/${(fObj.getMonth()+1).toString().padStart(2,'0')}/${fObj.getFullYear()}`; const km = parseFloat(document.getElementById('km_gps').value) || 0; const ing = parseFloat(document.getElementById('cash').value) || 0; const gas = parseFloat(document.getElementById('gas').value) || 0; const ahorro = parseFloat(document.getElementById('save_val').value) || 0; const hTaxi = parseFloat(document.getElementById('h_taxi').value) || 0; const hPred = parseFloat(document.getElementById('h_pred').value) || 0; 
+    
+    // GUARDIA: Leemos la casilla editable
+    let cobroGuardia = parseFloat(document.getElementById('val_guardia').value) || 0; 
+    
+    const salud = [saludDia.agua, saludDia.postura, saludDia.ejercicio]; let config = JSON.parse(localStorage.getItem('ruta360_config') || '{"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0}'); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); const neto = ing - gas - cobroGuardia - ahorro - CELULAR; let nuevoRegistro = { completa: fechaStr, fecha: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][fObj.getDay()], neto, ahorro, ing, gas, km, hTaxi, hPred, salud, netoHora: (hTaxi>0 ? neto/hTaxi : 0), gPagada: cobroGuardia }; let index = db.findIndex(r => r.completa === fechaStr); if(index !== -1) { let kmViejo = (db[index].km || 0); config.odometroGlobal = (config.odometroGlobal || 0) - kmViejo + km; nuevoRegistro.liquidadoFlota = db[index].liquidadoFlota; db[index] = nuevoRegistro; } else { config.odometroGlobal = (config.odometroGlobal || 0) + km; db.push(nuevoRegistro); } localStorage.setItem('ruta360_config', JSON.stringify(config)); db.sort((a,b) => a.completa.split('/').reverse().join('').localeCompare(b.completa.split('/').reverse().join(''))); localStorage.setItem('ruta360_db', JSON.stringify(db)); location.reload(); }, 600); }
     function borrarRegistro(idx) { if(confirm("¿Borrar día entero?")) { let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let conf = JSON.parse(localStorage.getItem('ruta360_config')); conf.odometroGlobal = Math.max(0, (conf.odometroGlobal||0) - (db[idx].km || 0)); db.splice(idx, 1); localStorage.setItem('ruta360_db', JSON.stringify(db)); localStorage.setItem('ruta360_config', JSON.stringify(conf)); location.reload(); } }
 
     function inicializar() {
@@ -685,4 +781,4 @@
     function exportarExcel() { const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let csv = "Fecha,Ingreso Bruto,Gasolina,KM Recorridos,Horas Taxi,Sueldo Limpio,Valor x Hora,Ahorro\\n"; db.forEach(r => { csv += `${r.completa},${r.ing},${r.gas},${r.km||0},${r.hTaxi||0},${r.neto.toFixed(2)},${(r.netoHora||0).toFixed(2)},${r.ahorro}\\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(["\\uFEFF"+csv], {type: 'text/csv;charset=utf-8;'})); link.download = "Ruta_Elite_360_Reporte.csv"; link.click(); }
 </script>
 </body>
-            </html>
+</html>
