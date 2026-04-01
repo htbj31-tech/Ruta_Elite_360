@@ -96,7 +96,6 @@
         .map-container { height: 180px; width: 100%; border-radius: 12px; z-index: 1; margin: 10px 0; border: 1px solid var(--border); }
         h3 { font-weight: 600; color: var(--text); opacity: 0.9; margin:0 0 10px 0;}
 
-        /* Estilos Finanzas Navegación */
         .finanzas-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
         .finanzas-nav button { background: none; border: none; font-size: 1.5rem; color: var(--accent); cursor: pointer; padding: 0 10px; }
         .finanzas-nav span { font-size: 1.1rem; font-weight: bold; text-transform: uppercase; color: var(--text); }
@@ -133,7 +132,7 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.23 • REPARACIÓN DE CAJA & EXCEL</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.24 • EXCEL MÓVIL FORZADO</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -409,7 +408,6 @@
 <script>
     const CELULAR = 1, CICLO_M = 5000;
     
-    // --- ANTIRREFRESCO DE EMERGENCIA (LÓGICO) ---
     window.addEventListener("beforeunload", function (e) {
         let btnStop = document.getElementById('btn_taxi_stop');
         if (btnStop && btnStop.style.display === 'block') {
@@ -479,7 +477,6 @@
     function seleccionarPerfil(id) { perfilActivo = id; document.querySelectorAll('.btn-perfil').forEach(btn => btn.classList.remove('active')); document.getElementById('btn_perf_' + id).classList.add('active'); let p = cargarPerfiles()[id]; document.getElementById('tarifa_nombre').value = p.nombre; document.getElementById('tarifa_base').value = p.base; document.getElementById('tarifa_km').value = p.km; document.getElementById('tarifa_min').value = p.min; actualizarPrecioTaxi(); calcularEstimadoManual(); }
     function guardarTarifas() { let p = cargarPerfiles(); p[perfilActivo].nombre = document.getElementById('tarifa_nombre').value || "Perfil " + perfilActivo; p[perfilActivo].base = parseFloat(document.getElementById('tarifa_base').value) || 0; p[perfilActivo].km = parseFloat(document.getElementById('tarifa_km').value) || 0; p[perfilActivo].min = parseFloat(document.getElementById('tarifa_min').value) || 0; localStorage.setItem('ruta360_taxi_multi', JSON.stringify(p)); refrescarBotonesPerfil(); actualizarPrecioTaxi(); calcularEstimadoManual(); }
 
-    // --- MOTOR DEL TAXÍMETRO ---
     let wakeLock = null;
     async function lockScreen() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(err) {} } }
     function unlockScreen() { if (wakeLock !== null) wakeLock.release().then(() => wakeLock = null); }
@@ -583,7 +580,6 @@
         let fechaActual = document.getElementById('fecha_reg').value; 
         let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
         
-        // El ID ÚNICO nos asegura que borrar siempre funcionará perfecto
         viajes.push({ id: Date.now(), correlativo: numCorrelativo, fecha: fechaActual, hora: horaViaje, monto: monto, concepto: concepto }); 
         
         localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); 
@@ -597,7 +593,7 @@
     function borrarCarrera(id) { 
         if(confirm("¿Borrar este viaje?")) { 
             let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
-            viajes = viajes.filter(v => v.id !== id && v.correlativo !== id); // Busca por ambos para asegurar compatibilidad con datos viejos
+            viajes = viajes.filter(v => v.id !== id && v.correlativo !== id);
             localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); 
             actualizarTotalCarreras(); 
             buscarCliente(); 
@@ -612,7 +608,6 @@
             if(viajes[i].fecha === fechaActual) { 
                 total += viajes[i].monto; conteo++; 
                 let hr = viajes[i].hora ? `<b style="font-size:0.7rem; color:gray;">${viajes[i].hora}</b> ` : ''; 
-                // Usamos el ID de verdad o el correlativo si es dato antiguo
                 let idPasar = viajes[i].id ? viajes[i].id : viajes[i].correlativo;
                 listaHtml.innerHTML += `<div class="carrera-item"><span style="font-size:0.8rem;">🚕 ${hr}${viajes[i].concepto}</span><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${viajes[i].monto.toFixed(2)}</span><span onclick="borrarCarrera(${idPasar})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; 
             } 
@@ -643,7 +638,6 @@
         let pagosCel = JSON.parse(localStorage.getItem('ruta360_pagos_cel') || '[]');
         let retirosAhorro = JSON.parse(localStorage.getItem('ruta360_retiros_ahorro') || '[]');
         
-        // Asignamos IDs a los registros viejos que no lo tengan para que la X no falle
         let fixIds = (list, key) => { let changed=false; list.forEach((x) => { if(!x.id){ x.id = Date.now() + Math.random(); changed=true;} }); if(changed) localStorage.setItem(key, JSON.stringify(list)); return list; };
         gastosOp = fixIds(gastosOp, 'ruta360_gastos_op');
         pagosCel = fixIds(pagosCel, 'ruta360_pagos_cel');
@@ -652,7 +646,7 @@
         let totalGuardiaIn = 0, totalCelularIn = 0, totalAhorroIn = 0;
         db.forEach(r => {
             if(!r.liquidadoFlota) totalGuardiaIn += (r.gPagada !== undefined ? r.gPagada : 25);
-            totalCelularIn += CELULAR; // $1 por cada día registrado
+            totalCelularIn += CELULAR; 
             totalAhorroIn += (r.ahorro || 0);
         });
 
@@ -673,7 +667,6 @@
         let html = '';
         if(arr.length === 0) html = '<div style="font-size:0.65rem; color:gray; text-align:center;">Sin movimientos.</div>';
         for(let i=arr.length-1; i>=Math.max(0, arr.length-5); i--) {
-            // AHORA MANDAMOS EL ID UNICO A BORRAR, NO EL ÍNDICE
             html += `<div style="display:flex; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid var(--border); padding:5px 0;"><span>${arr[i].fecha} - ${arr[i].concepto}</span><span>-$${arr[i].monto.toFixed(2)} <b style="color:var(--danger); cursor:pointer; font-size:1.1rem; padding:0 5px;" onclick="borrarRetiro('${storageKey}', ${arr[i].id})">×</b></span></div>`;
         }
         document.getElementById(divId).innerHTML = html;
@@ -690,7 +683,6 @@
         if(isNaN(m) || m<=0) return alert("Ingresa un monto válido.");
 
         let arr = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        // GUARDAMOS CON UN ID ÚNICO
         arr.push({ id: Date.now(), fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false });
         
         localStorage.setItem(storageKey, JSON.stringify(arr));
@@ -698,15 +690,11 @@
         renderFondosReales();
     }
     
-    // Función corregida: borra buscando el ID exacto, sin importar el orden
     function borrarRetiro(storageKey, id_a_borrar) {
         if(confirm("¿Estás seguro de que quieres borrar este registro?")) {
             let storageName = storageKey === 'gastos_op' ? 'ruta360_gastos_op' : (storageKey === 'pagos_cel' ? 'ruta360_pagos_cel' : 'ruta360_retiros_ahorro');
             let arr = JSON.parse(localStorage.getItem(storageName) || '[]'); 
-            
-            // Filtramos manteniendo solo los que NO tengan el ID a borrar
             arr = arr.filter(item => item.id !== id_a_borrar);
-            
             localStorage.setItem(storageName, JSON.stringify(arr)); 
             renderFondosReales();
         }
@@ -734,10 +722,10 @@
 
         document.getElementById('finanzas_mes_lbl').innerText = `${mesesNombres[fechaFinanzas.getMonth()]} ${anioStr}`;
         
-        let mesData = db.filter(r => r.completa.substring(3) === claveBuscada);
+        let mesData = db.filter(r => r.completa.includes(claveBuscada));
         let totalNeto = 0, totalBruto = 0, totalGas = 0, totalAhorro = 0, totalGuardias = 0, diasMes = mesData.length;
         
-        let semanasNeto = [0, 0, 0, 0, 0]; // Hasta 5 semanas
+        let semanasNeto = [0, 0, 0, 0, 0];
         let maxSemanaNeto = 0;
 
         mesData.forEach(r => {
@@ -751,11 +739,10 @@
         document.getElementById('mes_neto').innerText = "$" + totalNeto.toFixed(2);
         document.getElementById('mes_prom').innerText = diasMes > 0 ? "$" + (totalNeto/diasMes).toFixed(2) : "$0.00";
 
-        // Dibujar Gráfico Semanal
         let chartHtml = '';
         for(let i=0; i<5; i++) {
             let altura = maxSemanaNeto > 0 ? (semanasNeto[i] / maxSemanaNeto) * 100 : 0;
-            if (altura === 0 && i === 4) continue; // Ocultar sem 5 si está vacía
+            if (altura === 0 && i === 4) continue; 
             chartHtml += `<div class="chart-bar-wrapper"><span class="chart-val">$${Math.round(semanasNeto[i])}</span><div class="chart-bar" style="height:${altura}px;"></div><span class="chart-lbl">Sem ${i+1}</span></div>`;
         }
         document.getElementById('chart_semanas').innerHTML = chartHtml;
@@ -767,38 +754,59 @@
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
-    // --- EXPORTACIÓN PROFESIONAL (SHEETJS) CORREGIDA ---
+    // =========================================================
+    // NUEVO MOTOR DE DESCARGA: ESPECÍFICO PARA VENCER A LOS MÓVILES
+    // =========================================================
     function exportarExcelReal() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
         
-        // Validación MUY IMPORTANTE
-        if(db.length === 0) return alert("⚠️ No tienes datos. ¡Recuerda presionar 'GUARDAR JORNADA' al final de cada día en la pestaña Registro para que los datos pasen al reporte!");
+        if(db.length === 0) return alert("⚠️ No tienes datos guardados en la base principal.");
         
         let mesStr = (fechaFinanzas.getMonth() + 1).toString().padStart(2, '0');
         let anioStr = fechaFinanzas.getFullYear().toString();
         let claveBuscada = mesStr + '/' + anioStr;
-        let mesData = db.filter(r => r.completa.substring(3) === claveBuscada);
         
-        if(mesData.length===0) return alert(`⚠️ No hay jornadas guardadas para el mes de ${mesesNombres[fechaFinanzas.getMonth()]}.`);
+        // Usamos includes para que no falle si la fecha tiene un formato extraño
+        let mesData = db.filter(r => r.completa && r.completa.includes(claveBuscada));
+        
+        if(mesData.length === 0) return alert(`⚠️ No hay jornadas guardadas para ${mesesNombres[fechaFinanzas.getMonth()]} del ${anioStr}.`);
 
         let dataFormat = mesData.map(r => ({
-            "Fecha": r.completa,
-            "Ingreso Bruto ($)": r.ing,
-            "Combustible ($)": r.gas,
+            "Fecha": r.completa || "",
+            "Ingreso Bruto ($)": r.ing || 0,
+            "Combustible ($)": r.gas || 0,
             "Guardia ($)": r.gPagada !== undefined ? r.gPagada : 25,
             "Plan Celular ($)": 1,
             "Ahorro ($)": r.ahorro || 0,
-            "Sueldo Neto ($)": r.neto,
+            "Sueldo Neto ($)": r.neto || 0,
             "Horas Taxi": r.hTaxi || 0,
             "Ganancia X Hora ($)": r.netoHora ? parseFloat(r.netoHora.toFixed(2)) : 0
         }));
 
         let ws = XLSX.utils.json_to_sheet(dataFormat);
         let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte_" + mesesNombres[fechaFinanzas.getMonth()]);
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte_Mes");
         
-        // Aquí forzamos la descarga del archivo real
-        XLSX.writeFile(wb, `Ruta_Elite_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`);
+        let nombreArchivo = `Ruta_Elite_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`;
+
+        // Generamos el archivo usando un Blob (esto fuerza al navegador a respetar el .xlsx y su contenido)
+        try {
+            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            let url = URL.createObjectURL(blob);
+            
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ ¡Éxito! Se han exportado los datos de ${mesData.length} días.`);
+        } catch(error) {
+            alert("Hubo un error al crear el archivo: " + error.message);
+        }
     }
 
     function exportarExcelFlota() {
@@ -811,14 +819,14 @@
         db.forEach(r => { 
             if(!r.liquidadoFlota) { 
                 let g = r.gPagada !== undefined ? r.gPagada : 25; 
-                if(g > 0) { dataFormat.push({ "Fecha": r.completa, "Concepto": "Guardia Diaria", "Ingreso ($)": g, "Egreso ($)": 0 }); totalG += g; } 
+                if(g > 0) { dataFormat.push({ "Fecha": r.completa || "", "Concepto": "Guardia Diaria", "Ingreso ($)": g, "Egreso ($)": 0 }); totalG += g; } 
             } 
         });
         gastos.forEach(g => { 
-            if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha, "Concepto": g.concepto, "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
+            if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha || "", "Concepto": g.concepto || "Gasto", "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
         });
 
-        if(dataFormat.length === 0) return alert("No hay fondos acumulados ni gastos para entregar a la flota.");
+        if(dataFormat.length === 0) return alert("⚠️ No hay fondos acumulados ni gastos para entregar a la flota.");
 
         dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
         dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
@@ -826,7 +834,25 @@
         let ws = XLSX.utils.json_to_sheet(dataFormat);
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Dueno");
-        XLSX.writeFile(wb, "Reporte_Dueno_Flota.xlsx");
+
+        // Usamos el mismo motor reforzado aquí
+        try {
+            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            let url = URL.createObjectURL(blob);
+            
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "Reporte_Dueno_Flota.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ ¡Éxito! Reporte del dueño generado.`);
+        } catch(error) {
+            alert("Hubo un error al crear el archivo: " + error.message);
+        }
     }
 
     function renderHistorialGeneral() {
