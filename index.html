@@ -132,7 +132,7 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.25 • EXCEL NATIVO COMPARTIR</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.26 • DESCARGA DE EXCEL FORZADA</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -232,7 +232,7 @@
             <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
             <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
             
-            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📤 Compartir Excel del Mes</button>
+            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📤 Obtener Excel de este Mes</button>
         </div>
     </div>
 
@@ -302,7 +302,7 @@
             <div class="fondo-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-weight:bold; color:var(--text);">Fondo Guardias</span>
-                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Enviar Excel Dueño</button>
+                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Obtener Excel Dueño</button>
                 </div>
                 <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
                 <span id="saldo_guardias" style="display:block; font-size:2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
@@ -752,48 +752,49 @@
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
-
-    // =================================================================
-    // MOTOR DE DESCARGA AVANZADO: USA EL COMPARTIR DEL TELÉFONO (SHARE API)
-    // =================================================================
+    // ====================================================================
+    // MOTOR DE DESCARGA: PARCHE VISUAL PARA MÓVILES (BOTONAZO GIGANTE)
+    // ====================================================================
     
-    // Función central para generar y compartir el Excel
     function generarYCompartirExcel(dataFormat, nombreHoja, nombreArchivo) {
         try {
             let ws = XLSX.utils.json_to_sheet(dataFormat);
             let wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
             
-            // Convertimos el Excel a un formato de archivo que el celular entienda
-            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            let file = new File([blob], nombreArchivo, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            // Convertimos todo a un texto larguísimo en Base64 (imposible de bloquear)
+            let base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+            let dataUri = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + base64;
 
-            // Verificamos si el teléfono soporta compartir archivos directamente
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
-                    files: [file],
-                    title: nombreArchivo,
-                    text: 'Aquí tienes tu reporte Excel de Ruta Élite 360.'
-                }).then(() => {
-                    console.log('Compartido con éxito');
-                }).catch((error) => {
-                    console.log('Compartir cancelado o falló', error);
-                });
-            } else {
-                // Si el navegador es viejo o no soporta compartir, forzamos la descarga clásica
-                let url = URL.createObjectURL(blob);
+            // Intentamos que se descargue solo primero
+            try {
                 let a = document.createElement("a");
-                a.href = url;
+                a.href = dataUri;
                 a.download = nombreArchivo;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                alert(`✅ Archivo guardado. Revisa la carpeta de "Descargas" o "Mis Archivos" en tu celular.`);
+            } catch(e) {}
+            
+            // EL PARCHE: Como los celulares ignoran el click anterior, lanzamos este cartel gigante
+            let cont = document.getElementById('caja_descarga_emergencia');
+            if(!cont) {
+                cont = document.createElement('div');
+                cont.id = 'caja_descarga_emergencia';
+                cont.style.cssText = "position:fixed; top:50%; left:5%; width:90%; transform:translateY(-50%); background:var(--accent); color:white; padding:25px; border-radius:16px; z-index:9999; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5); border: 2px solid white; box-sizing:border-box;";
+                document.body.appendChild(cont);
             }
+            cont.innerHTML = `
+                <div style="font-size:3rem; margin-bottom:10px;">📊</div>
+                <h3 style="margin:0 0 10px 0; color:white;">¡Tu Excel está listo!</h3>
+                <p style="font-size:0.85rem; margin:0 0 20px 0; opacity:0.9;">Tu teléfono bloquea las descargas en segundo plano. Toca el botón de abajo para guardar <b>${nombreArchivo}</b> tú mismo.</p>
+                <a href="${dataUri}" download="${nombreArchivo}" style="display:inline-block; background:white; color:var(--accent); padding:15px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:20px; width:80%; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.2);">📥 DESCARGAR AQUÍ</a>
+                <br>
+                <button onclick="document.getElementById('caja_descarga_emergencia').remove()" style="background:transparent; border:1px solid rgba(255,255,255,0.5); color:white; padding:10px 20px; border-radius:8px; font-size:0.9rem;">Cerrar Mensaje</button>
+            `;
+
         } catch(error) {
-            alert("Hubo un error al crear el archivo: " + error.message);
+            alert("Error al armar el archivo: " + error.message);
         }
     }
 
@@ -806,7 +807,7 @@
         let claveBuscada = mesStr + '/' + anioStr;
         let mesData = db.filter(r => r.completa && r.completa.includes(claveBuscada));
         
-        if(mesData.length === 0) return alert(`⚠️ No hay jornadas guardadas para ${mesesNombres[fechaFinanzas.getMonth()]} del ${anioStr}.`);
+        if(mesData.length === 0) return alert(`⚠️ No hay jornadas para ${mesesNombres[fechaFinanzas.getMonth()]} del ${anioStr}.`);
 
         let dataFormat = mesData.map(r => ({
             "Fecha": r.completa || "",
@@ -841,7 +842,7 @@
             if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha || "", "Concepto": g.concepto || "Gasto", "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
         });
 
-        if(dataFormat.length === 0) return alert("⚠️ No hay fondos acumulados ni gastos para entregar a la flota.");
+        if(dataFormat.length === 0) return alert("⚠️ No hay fondos acumulados ni gastos para la flota.");
 
         dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
         dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
@@ -883,4 +884,4 @@
     }
 </script>
 </body>
-</html>
+    </html>
