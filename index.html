@@ -16,14 +16,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <style>
         :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ffffff; --accent: #2563eb; --success: #16a34a; --save: #d97706; --danger: #dc2626; --taxi: #eab308; --border: #e5e7eb; }
         .dark-mode { --bg: #111827; --card: #1f2937; --text: #f9fafb; --primary: #1f2937; --border: #374151; }
         
-        /* ESCUDO ANTIRREFRESCO: overscroll-behavior-y: none bloquea el pull-to-refresh */
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; transition: 0.3s; user-select: none; overscroll-behavior-y: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; transition: 0.3s; user-select: none; }
         
         .header { background: var(--primary); padding: 20px 15px 15px; text-align: center; border-bottom: 1px solid var(--border); position: relative; display:flex; justify-content:center; align-items:center;}
         .mode-toggle { position: absolute; right: 15px; background: transparent; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; opacity: 0.7;}
@@ -68,6 +67,7 @@
 
         .btn { width: 100%; padding: 15px; border-radius: 12px; font-weight: 600; border: none; margin-top: 10px; font-size: 1rem; background: var(--text); color: var(--card); cursor: pointer;}
         .btn-save { background: var(--text); color: var(--card); }
+        .btn-small { background: var(--bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; color: var(--text); cursor: pointer;}
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;}
         input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); border-radius: 10px; box-sizing: border-box; background: var(--bg); color: var(--text); }
@@ -95,13 +95,19 @@
 
         .map-container { height: 180px; width: 100%; border-radius: 12px; z-index: 1; margin: 10px 0; border: 1px solid var(--border); }
         h3 { font-weight: 600; color: var(--text); opacity: 0.9; margin:0 0 10px 0;}
+
+        /* Estilos Finanzas Navegación */
+        .finanzas-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
+        .finanzas-nav button { background: none; border: none; font-size: 1.5rem; color: var(--accent); cursor: pointer; padding: 0 10px; }
+        .finanzas-nav span { font-size: 1.1rem; font-weight: bold; text-transform: uppercase; color: var(--text); }
         
-        /* Estilos gráficos para semanas */
-        .bar-week-container { display:flex; align-items:center; margin-bottom:8px; }
-        .bar-week-label { width: 60px; font-size:0.75rem; color:gray; }
-        .bar-week-track { flex:1; background:var(--bg); border-radius:4px; height:12px; overflow:hidden; border:1px solid var(--border); margin:0 10px; }
-        .bar-week-fill { height:100%; background:var(--accent); border-radius:4px; transition:width 0.5s; }
-        .bar-week-val { width: 45px; font-size:0.75rem; font-weight:bold; color:var(--text); text-align:right;}
+        .chart-container { display: flex; justify-content: space-around; align-items: flex-end; height: 120px; margin: 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .chart-bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 20%; }
+        .chart-bar { background: var(--accent); width: 30px; border-radius: 4px 4px 0 0; min-height: 5px; transition: height 0.5s; }
+        .chart-lbl { font-size: 0.6rem; color: gray; margin-top: 5px; }
+        .chart-val { font-size: 0.65rem; font-weight: bold; margin-bottom: 5px; color: var(--text); }
+
+        .fondo-card { text-align:center; padding:15px; border:1px solid var(--border); border-radius:12px; margin-bottom:15px; background:var(--bg); }
     </style>
 </head>
 <body onload="inicializar()">
@@ -118,9 +124,9 @@
     <a href="#" onclick="abrirTabDesdeMenu('tab_clientes')">👥 Base de Clientes VIP</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_ministerio')">📖 Ministerio Público</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_historial')">📜 Historial de Jornadas</a>
-    <a href="#" onclick="exportarExcelProfesional()">📄 Exportar Mensual (Excel)</a>
-    <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (Cada Domingo)</a>
-    <a href="#" onclick="document.getElementById('file_import').click()" style="color:var(--success);">📂 Restaurar Respaldo</a>
+    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Exportar Excel Real (Mes)</a>
+    <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (.json)</a>
+    <a href="#" onclick="document.getElementById('file_import').click()">📂 Restaurar Respaldo</a>
 </div>
 
 <div class="header">
@@ -202,36 +208,30 @@
     </div>
 
     <div id="tab_finanzas" class="tab-content">
-        <div class="card" style="border: 1px solid var(--accent); background:rgba(37, 99, 235, 0.05);">
-            <h3 style="font-size:0.85rem; color:var(--accent); text-transform:uppercase; margin-bottom:10px;">📱 Fondo Plan Celular</h3>
-            <p style="font-size:0.65rem; color:gray; margin-top:0;">La app ahorra $1 automáticamente por cada día de trabajo.</p>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-size:0.75rem; font-weight:bold; color:var(--text);">Saldo Disponible:</span>
-                <span id="saldo_celular" style="font-size:1.8rem; font-weight:300; color:var(--text);">$0.00</span>
-            </div>
-            <div class="progress-container" style="height:4px; margin-bottom:4px;"><div class="progress-bar" style="background:var(--accent); width:100%;"></div></div>
-            <div style="font-size:0.65rem; color:gray; text-align:right; margin-bottom:15px;" id="detalle_celular">Recaudado Histórico: $0 | Pagado: $0</div>
-            <button class="btn" style="background:var(--accent); color:white; font-size:0.85rem; padding:12px;" onclick="registrarPagoPlan()">💸 Registrar Pago de Plan</button>
-        </div>
-
         <div class="card">
-            <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; text-align:center;">Rendimiento Anual <span id="lbl_anio_actual"></span></h3>
-            <div class="stats-grid" style="margin-top:15px;">
-                <div style="text-align:center; border:1px solid var(--border); padding:15px; border-radius:12px;">
-                    <span style="font-size:0.6rem; color:gray; display:block; text-transform:uppercase;">Neto Anual</span>
-                    <span id="neto_total" style="font-size:1.4rem; font-weight:300;">$0</span>
+            <div class="finanzas-nav">
+                <button onclick="navegarMes(-1)">◀</button>
+                <span id="finanzas_mes_lbl">MES AÑO</span>
+                <button onclick="navegarMes(1)">▶</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div style="text-align:center; border:1px solid var(--border); padding:15px; border-radius:12px; background:var(--bg);">
+                    <span style="font-size:0.6rem; color:gray; display:block; text-transform:uppercase;">Neto Mensual</span>
+                    <span id="mes_neto" style="font-size:1.4rem; font-weight:300; color:var(--accent);">$0.00</span>
                 </div>
-                <div style="text-align:center; border:1px solid var(--border); padding:15px; border-radius:12px;">
-                    <span style="font-size:0.6rem; color:gray; display:block; text-transform:uppercase;">Promedio Hora</span>
-                    <span id="promedio_hora" style="font-size:1.4rem; font-weight:300;">$0.00</span>
+                <div style="text-align:center; border:1px solid var(--border); padding:15px; border-radius:12px; background:var(--bg);">
+                    <span style="font-size:0.6rem; color:gray; display:block; text-transform:uppercase;">Promedio Día</span>
+                    <span id="mes_prom" style="font-size:1.4rem; font-weight:300;">$0.00</span>
                 </div>
             </div>
             
-            <h3 style="margin:25px 0 10px; font-size:0.85rem; color:gray; text-transform:uppercase;">📊 Rendimiento de este Mes</h3>
-            <div id="grafico_semanal" style="background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:20px;"></div>
+            <h3 style="margin:20px 0 5px; font-size:0.8rem; color:gray; text-transform:uppercase; text-align:center;">📊 Ganancias por Semana</h3>
+            <div class="chart-container" id="chart_semanas">
+                </div>
 
-            <h3 style="margin:20px 0 15px; font-size:0.85rem; color:gray; text-transform:uppercase;">Historial de Meses</h3>
-            <div id="lista_meses_finanzas"></div>
+            <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
+            <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
         </div>
     </div>
 
@@ -296,9 +296,57 @@
 
     <div id="tab_operaciones" class="tab-content">
         <div class="card">
+            <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin-bottom:15px;">🏦 Alcancías y Fondos</h3>
+            
+            <div class="fondo-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:bold; color:var(--text);">Fondo Guardias</span>
+                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📊 Excel Dueño</button>
+                </div>
+                <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
+                <span id="saldo_guardias" style="display:block; font-size:2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="number" id="monto_gasto_op" placeholder="Gasto $" step="0.01" style="flex:1; padding:8px;">
+                    <input type="text" id="concepto_gasto_op" placeholder="Detalle" style="flex:2; padding:8px;">
+                </div>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button class="btn-small" style="flex:1; color:var(--danger);" onclick="registrarRetiro('guardia')">- Restar Gasto</button>
+                    <button class="btn-small" style="flex:1; background:var(--text); color:var(--card);" onclick="liquidarFondo('guardia')">Liquidación Total</button>
+                </div>
+                <div id="lista_retiros_guardia" class="lista-carreras" style="max-height: 100px; margin-top:10px; text-align:left;"></div>
+            </div>
+
+            <div class="fondo-card" style="border-color:var(--accent); background:rgba(37, 99, 235, 0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:bold; color:var(--accent);">Plan Celular ($1 / día)</span>
+                </div>
+                <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Acumulado</span>
+                <span id="saldo_celular" style="display:block; font-size:2rem; font-weight:300; color:var(--accent); margin:5px 0;">$0.00</span>
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="number" id="monto_gasto_cel" placeholder="Pago $" step="0.01" style="flex:1; padding:8px;">
+                    <button class="btn-small" style="flex:1; background:var(--accent); color:white;" onclick="registrarRetiro('celular')">Pagar Factura</button>
+                </div>
+                <div id="lista_retiros_celular" class="lista-carreras" style="max-height: 100px; margin-top:10px; text-align:left;"></div>
+            </div>
+
+            <div class="fondo-card" style="border-color:var(--save); background:rgba(217, 119, 6, 0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:bold; color:var(--save);">Caja de Ahorros Personales</span>
+                </div>
+                <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Total Ahorrado</span>
+                <span id="saldo_ahorro" style="display:block; font-size:2rem; font-weight:300; color:var(--save); margin:5px 0;">$0.00</span>
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="number" id="monto_retiro_ahorro" placeholder="Retiro $" step="0.01" style="flex:1; padding:8px;">
+                    <button class="btn-small" style="flex:1; background:var(--save); color:white;" onclick="registrarRetiro('ahorro')">Extraer Ahorro</button>
+                </div>
+                <div id="lista_retiros_ahorro" class="lista-carreras" style="max-height: 100px; margin-top:10px; text-align:left;"></div>
+            </div>
+        </div>
+
+        <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin:0;">Odómetro Global</h3>
-                <button onclick="calibrarOdometro()" style="background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.65rem; padding:5px 10px; border-radius:8px; cursor:pointer;">Calibrar</button>
+                <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin:0;">Odómetro y Motor</h3>
+                <button onclick="calibrarOdometro()" class="btn-small">Calibrar</button>
             </div>
             
             <div style="font-size:0.75rem; font-weight:600; display:flex; justify-content:space-between;"><span>Cambio Aceite</span><span id="txt_motor" style="color:var(--text); font-weight:normal; text-align:right;">0 km</span></div>
@@ -308,28 +356,6 @@
             <div style="font-size:0.75rem; font-weight:600; display:flex; justify-content:space-between; margin-top:20px;"><span>Mantenimiento Caja</span><span id="txt_caja" style="font-weight:normal;">0 de 4</span></div>
             <div class="progress-container"><div id="bar_caja" class="progress-bar" style="background:gray;"></div></div>
             <button id="btn_caja" class="btn" style="background:gray; color:white; font-size:0.8rem; display:none; padding:10px;" onclick="reinicioCaja()">Registrar Mantenimiento Caja</button>
-        </div>
-
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin:0;">Fondo Guardias</h3>
-                <button onclick="exportarFlotaProfesional()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📥 Reporte Dueño (Excel)</button>
-            </div>
-            
-            <div style="text-align:center; padding:20px; border:1px solid var(--border); border-radius:12px; margin-bottom:15px;">
-                <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
-                <span id="saldo_guardias" style="display:block; font-size:2.2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
-                <span id="detalle_fondo" style="font-size:0.65rem; color:gray;">Recaudado: $0 | Gastado: $0</span>
-            </div>
-            
-            <button class="btn" style="background:var(--accent); color:white; font-size:0.85rem; margin-bottom:15px; padding:12px;" onclick="liquidarFlota()">🤝 Entregar Saldo al Dueño</button>
-
-            <div class="stats-grid" style="margin-bottom:0; border-top:1px solid var(--border); padding-top:15px;">
-                <div><label style="font-size:0.65rem; color:gray;">Gasto Monto $</label><input type="number" id="monto_gasto_op" placeholder="0.00" step="0.01"></div>
-                <div><label style="font-size:0.65rem; color:gray;">Concepto</label><input type="text" id="concepto_gasto_op" placeholder="Detalle..."></div>
-            </div>
-            <button class="btn" style="background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.85rem;" onclick="registrarGastoOp()">Descontar Gasto</button>
-            <div id="lista_gastos_op" class="lista-carreras" style="max-height: 120px; margin-top:15px;"></div>
         </div>
     </div>
 
@@ -381,16 +407,17 @@
 <script>
     const CELULAR = 1, CICLO_M = 5000;
     
-    let map = null, markerDestino = null, currentPosMarker = null;
-
-    // --- ESCUDO ANTIRREFRESCO Y CIERRE ACCIDENTAL ---
-    window.onbeforeunload = function(e) {
-        if (document.getElementById('btn_taxi_stop').style.display === 'block') {
-            e.preventDefault();
-            e.returnValue = 'Tienes un viaje de taxímetro en curso. ¿Seguro que quieres salir y perder los datos?';
-            return e.returnValue;
+    // --- ANTIRREFRESCO DE EMERGENCIA (LÓGICO) ---
+    window.addEventListener("beforeunload", function (e) {
+        let btnStop = document.getElementById('btn_taxi_stop');
+        if (btnStop && btnStop.style.display === 'block') {
+            var confirmationMessage = "⚠️ Tienes un viaje de taxi en curso. ¿Seguro que quieres recargar la app y perder los datos?";
+            e.returnValue = confirmationMessage; 
+            return confirmationMessage; 
         }
-    };
+    });
+
+    let map = null, markerDestino = null, currentPosMarker = null;
 
     function abrirMenu() { document.getElementById("miMenuLateral").style.width = "250px"; document.getElementById("overlay_menu").classList.add("active"); }
     function cerrarMenu() { document.getElementById("miMenuLateral").style.width = "0"; document.getElementById("overlay_menu").classList.remove("active"); }
@@ -400,7 +427,16 @@
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); 
         document.getElementById(tabId).classList.add('active'); 
         if(btn) btn.classList.add('active'); 
-        if(tabId === 'tab_taximetro') { setTimeout(() => { if(!map) initMapaLeaflet(); else map.invalidateSize(); renderHistorialTaxi(); }, 300); }
+        
+        if(tabId === 'tab_taximetro') {
+            setTimeout(() => { 
+                if(!map) initMapaLeaflet(); 
+                else map.invalidateSize(); 
+                renderHistorialTaxi();
+            }, 300);
+        }
+        if(tabId === 'tab_finanzas') { renderFinanzasMes(); }
+        if(tabId === 'tab_operaciones') { renderFondosReales(); }
     }
     
     function abrirTabDesdeMenu(tabId) { cerrarMenu(); cambiarTab(tabId, null); if(tabId==='tab_clientes') buscarCliente(); }
@@ -410,20 +446,24 @@
     function abrirModal() { 
         document.getElementById('modal_carrera').style.display = 'flex'; 
         let now = new Date(); 
-        let h = now.getHours().toString().padStart(2,'0'); let m = now.getMinutes().toString().padStart(2,'0'); 
+        let h = now.getHours().toString().padStart(2,'0'); 
+        let m = now.getMinutes().toString().padStart(2,'0'); 
         document.getElementById('hora_carrera').value = `${h}:${m}`; 
         document.getElementById('concepto_carrera').value = ''; 
     }
     function cerrarModal() { document.getElementById('modal_carrera').style.display = 'none'; }
 
     window.limiteHistorial = 30; 
-    function cargarMasHistorial() { window.limiteHistorial += 30; inicializar(); }
+    function cargarMasHistorial() { window.limiteHistorial += 30; renderHistorialGeneral(); }
 
     let saludDia = { agua: false, postura: false, ejercicio: false };
     function toggleHealth(tipo) { saludDia[tipo] = !saludDia[tipo]; let btn = document.getElementById('btn_' + tipo); if (saludDia[tipo]) { btn.classList.add('active'); } else { btn.classList.remove('active'); } }
 
-    function exportarBackup() { let data = { 'ruta360_db': localStorage.getItem('ruta360_db') || '[]', 'ruta360_viajes': localStorage.getItem('ruta360_viajes') || '[]', 'ruta360_gastos_op': localStorage.getItem('ruta360_gastos_op') || '[]', 'ruta360_config': localStorage.getItem('ruta360_config') || '{}', 'ruta360_contador_viajes': localStorage.getItem('ruta360_contador_viajes') || '0', 'ruta360_taxi_multi': localStorage.getItem('ruta360_taxi_multi') || 'null', 'ruta360_contactos': localStorage.getItem('ruta360_contactos') || '[]', 'ruta360_historial_taxi': localStorage.getItem('ruta360_historial_taxi') || '[]', 'ruta360_pagos_cel': localStorage.getItem('ruta360_pagos_cel') || '[]' }; let blob = new Blob([JSON.stringify(data)], {type: "application/json"}); let link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Ruta360_Respaldo.json"; link.click(); cerrarMenu(); alert("✅ Respaldo descargado."); }
-    function importarBackup(event) { let file = event.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = function(e) { try { let data = JSON.parse(e.target.result); if(data['ruta360_db']) localStorage.setItem('ruta360_db', data['ruta360_db']); if(data['ruta360_viajes']) localStorage.setItem('ruta360_viajes', data['ruta360_viajes']); if(data['ruta360_gastos_op']) localStorage.setItem('ruta360_gastos_op', data['ruta360_gastos_op']); if(data['ruta360_config']) localStorage.setItem('ruta360_config', data['ruta360_config']); if(data['ruta360_contador_viajes']) localStorage.setItem('ruta360_contador_viajes', data['ruta360_contador_viajes']); if(data['ruta360_taxi_multi']) localStorage.setItem('ruta360_taxi_multi', data['ruta360_taxi_multi']); if(data['ruta360_contactos']) localStorage.setItem('ruta360_contactos', data['ruta360_contactos']); if(data['ruta360_historial_taxi']) localStorage.setItem('ruta360_historial_taxi', data['ruta360_historial_taxi']); if(data['ruta360_pagos_cel']) localStorage.setItem('ruta360_pagos_cel', data['ruta360_pagos_cel']); alert("🎉 ¡Datos restaurados!"); location.reload(); } catch(err) { alert("⚠️ Archivo corrupto."); } }; reader.readAsText(file); }
+    function exportarBackup() { 
+        let data = { 'ruta360_db': localStorage.getItem('ruta360_db') || '[]', 'ruta360_viajes': localStorage.getItem('ruta360_viajes') || '[]', 'ruta360_gastos_op': localStorage.getItem('ruta360_gastos_op') || '[]', 'ruta360_pagos_cel': localStorage.getItem('ruta360_pagos_cel') || '[]', 'ruta360_retiros_ahorro': localStorage.getItem('ruta360_retiros_ahorro') || '[]', 'ruta360_config': localStorage.getItem('ruta360_config') || '{}', 'ruta360_contador_viajes': localStorage.getItem('ruta360_contador_viajes') || '0', 'ruta360_taxi_multi': localStorage.getItem('ruta360_taxi_multi') || 'null', 'ruta360_contactos': localStorage.getItem('ruta360_contactos') || '[]', 'ruta360_historial_taxi': localStorage.getItem('ruta360_historial_taxi') || '[]' }; 
+        let blob = new Blob([JSON.stringify(data)], {type: "application/json"}); let link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = "Ruta360_Respaldo.json"; link.click(); cerrarMenu(); alert("✅ Respaldo descargado."); 
+    }
+    function importarBackup(event) { let file = event.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = function(e) { try { let data = JSON.parse(e.target.result); if(data['ruta360_db']) localStorage.setItem('ruta360_db', data['ruta360_db']); if(data['ruta360_viajes']) localStorage.setItem('ruta360_viajes', data['ruta360_viajes']); if(data['ruta360_gastos_op']) localStorage.setItem('ruta360_gastos_op', data['ruta360_gastos_op']); if(data['ruta360_pagos_cel']) localStorage.setItem('ruta360_pagos_cel', data['ruta360_pagos_cel']); if(data['ruta360_retiros_ahorro']) localStorage.setItem('ruta360_retiros_ahorro', data['ruta360_retiros_ahorro']); if(data['ruta360_config']) localStorage.setItem('ruta360_config', data['ruta360_config']); if(data['ruta360_contador_viajes']) localStorage.setItem('ruta360_contador_viajes', data['ruta360_contador_viajes']); if(data['ruta360_taxi_multi']) localStorage.setItem('ruta360_taxi_multi', data['ruta360_taxi_multi']); if(data['ruta360_contactos']) localStorage.setItem('ruta360_contactos', data['ruta360_contactos']); if(data['ruta360_historial_taxi']) localStorage.setItem('ruta360_historial_taxi', data['ruta360_historial_taxi']); alert("🎉 ¡Datos restaurados!"); location.reload(); } catch(err) { alert("⚠️ Archivo corrupto."); } }; reader.readAsText(file); }
 
     function guardarVIP() { let nom = document.getElementById('vip_nombre').value.trim(); let tel = document.getElementById('vip_tel').value.trim().replace(/[^0-9]/g,''); if(!nom || !tel) return alert("Ingresa un apodo y un número."); let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos.push({id: Date.now(), nom: nom, tel: tel}); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); document.getElementById('vip_nombre').value = ''; document.getElementById('vip_tel').value = ''; renderVIP(); }
     function borrarVIP(id) { if(confirm("¿Borrar contacto?")){ let contactos = JSON.parse(localStorage.getItem('ruta360_contactos') || '[]'); contactos = contactos.filter(c => c.id !== id); localStorage.setItem('ruta360_contactos', JSON.stringify(contactos)); renderVIP(); } }
@@ -437,110 +477,104 @@
     function seleccionarPerfil(id) { perfilActivo = id; document.querySelectorAll('.btn-perfil').forEach(btn => btn.classList.remove('active')); document.getElementById('btn_perf_' + id).classList.add('active'); let p = cargarPerfiles()[id]; document.getElementById('tarifa_nombre').value = p.nombre; document.getElementById('tarifa_base').value = p.base; document.getElementById('tarifa_km').value = p.km; document.getElementById('tarifa_min').value = p.min; actualizarPrecioTaxi(); calcularEstimadoManual(); }
     function guardarTarifas() { let p = cargarPerfiles(); p[perfilActivo].nombre = document.getElementById('tarifa_nombre').value || "Perfil " + perfilActivo; p[perfilActivo].base = parseFloat(document.getElementById('tarifa_base').value) || 0; p[perfilActivo].km = parseFloat(document.getElementById('tarifa_km').value) || 0; p[perfilActivo].min = parseFloat(document.getElementById('tarifa_min').value) || 0; localStorage.setItem('ruta360_taxi_multi', JSON.stringify(p)); refrescarBotonesPerfil(); actualizarPrecioTaxi(); calcularEstimadoManual(); }
 
-    let wakeLock = null; async function lockScreen() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(err) {} } } function unlockScreen() { if (wakeLock !== null) wakeLock.release().then(() => wakeLock = null); }
+    // --- MOTOR DEL TAXÍMETRO ---
+    let wakeLock = null;
+    async function lockScreen() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(err) {} } }
+    function unlockScreen() { if (wakeLock !== null) wakeLock.release().then(() => wakeLock = null); }
 
-    let taxiWatchId = null, taxiLat = null, taxiLon = null; let taxiDist = 0, taxiWaitSecs = 0, taxiTimeTotal = 0, taxiInterval = null; let taxiPriceFinal = 0.00; let taxiLastTick = 0; let estaDetenido = true; let lastGpsTime = 0; let isTaxiPaused = false; 
+    let taxiWatchId = null, taxiLat = null, taxiLon = null; 
+    let taxiDist = 0, taxiWaitSecs = 0, taxiTimeTotal = 0, taxiInterval = null; 
+    let taxiPriceFinal = 0.00; let taxiLastTick = 0; 
+    let estaDetenido = true; let lastGpsTime = 0;
+    let isTaxiPaused = false; 
 
     function toggleTarifas() { let c = document.getElementById('config_tarifas'); c.style.display = c.style.display === 'none' ? 'block' : 'none'; }
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) { var R = 6371; var dLat = (lat2-lat1) * (Math.PI/180); var dLon = (lon2-lon1) * (Math.PI/180); var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 
-    function iniciarTaxi() { if (!navigator.geolocation) return alert("Sin GPS."); lockScreen(); taxiDist = 0; taxiWaitSecs = 0; taxiTimeTotal = 0; taxiLat = null; taxiLon = null; taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now(); isTaxiPaused = false; arrancarMotorTaxi(); }
-    function arrancarMotorTaxi() { document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; actualizarPrecioTaxi(); document.getElementById('btn_taxi_start').style.display = 'none'; document.getElementById('btn_taxi_stop').style.display = 'block'; document.getElementById('btn_taxi_pause').style.display = 'block'; document.getElementById('btn_taxi_pause').innerText = "⏸️ Pausar"; document.getElementById('btn_taxi_pause').style.background = "var(--accent)"; if(taxiInterval) clearInterval(taxiInterval); taxiInterval = setInterval(() => { let now = Date.now(); let deltaSecs = (now - taxiLastTick) / 1000; taxiLastTick = now; if(!isTaxiPaused) { taxiTimeTotal += deltaSecs; if (deltaSecs <= 2.0 && estaDetenido) taxiWaitSecs += deltaSecs; actualizarPrecioTaxi(); } document.getElementById('taxi_tiempo').innerText = `${Math.floor(taxiTimeTotal/60).toString().padStart(2,'0')}:${Math.floor(taxiTimeTotal%60).toString().padStart(2,'0')}`; document.getElementById('taxi_espera').innerText = `${Math.floor(taxiWaitSecs/60).toString().padStart(2,'0')}:${Math.floor(taxiWaitSecs%60).toString().padStart(2,'0')}`; }, 1000); if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId); taxiWatchId = navigator.geolocation.watchPosition((position) => { let lat = position.coords.latitude; let lon = position.coords.longitude; let speed = position.coords.speed; let nowTime = Date.now(); if (taxiLat !== null) { let dKm = getDistanceFromLatLonInKm(taxiLat, taxiLon, lat, lon); if (!isTaxiPaused && (dKm * 1000 > 1.0)) { taxiDist += dKm; document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; } if (speed !== null) estaDetenido = (speed < 0.5); else estaDetenido = ((dKm*1000) / ((nowTime - lastGpsTime)/1000) < 0.5); } taxiLat = lat; taxiLon = lon; lastGpsTime = nowTime; if(map && currentPosMarker) currentPosMarker.setLatLng([lat, lon]); }, (err) => {}, { enableHighAccuracy: true }); }
-    function pausarTaxi() { isTaxiPaused = !isTaxiPaused; let btnPausa = document.getElementById('btn_taxi_pause'); if(isTaxiPaused) { btnPausa.innerText = "▶️ Reanudar"; btnPausa.style.background = "var(--save)"; } else { btnPausa.innerText = "⏸️ Pausar"; btnPausa.style.background = "var(--accent)"; taxiLastTick = Date.now(); lastGpsTime = Date.now(); } }
-    function actualizarPrecioTaxi() { let p = cargarPerfiles()[perfilActivo]; taxiPriceFinal = p.base + (taxiDist * p.km) + ((taxiWaitSecs/60) * p.min); document.getElementById('taxi_precio').innerText = "$" + taxiPriceFinal.toFixed(2); }
-    function detenerTaxi() { unlockScreen(); clearInterval(taxiInterval); if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId); document.getElementById('btn_taxi_stop').style.display = 'none'; document.getElementById('btn_taxi_pause').style.display = 'none'; document.getElementById('btn_taxi_start').style.display = 'block'; abrirModal(); let perfilSelec = cargarPerfiles()[perfilActivo]; document.getElementById('monto_carrera').value = taxiPriceFinal.toFixed(2); document.getElementById('concepto_carrera').value = perfilSelec.nombre; document.getElementById('concepto_carrera').focus(); guardarHistorialTaxiLocal(perfilSelec.nombre, taxiDist.toFixed(2), taxiPriceFinal.toFixed(2), taxiTimeTotal, taxiWaitSecs); }
+    function iniciarTaxi() {
+        if (!navigator.geolocation) return alert("Sin GPS.");
+        lockScreen(); 
+        taxiDist = 0; taxiWaitSecs = 0; taxiTimeTotal = 0; taxiLat = null; taxiLon = null; 
+        taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now();
+        isTaxiPaused = false;
+        arrancarMotorTaxi();
+    }
+    
+    function arrancarMotorTaxi() {
+        document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; 
+        actualizarPrecioTaxi(); 
+        
+        document.getElementById('btn_taxi_start').style.display = 'none'; 
+        document.getElementById('btn_taxi_stop').style.display = 'block';
+        document.getElementById('btn_taxi_pause').style.display = 'block';
+        document.getElementById('btn_taxi_pause').innerText = "⏸️ Pausar";
+        document.getElementById('btn_taxi_pause').style.background = "var(--accent)";
+        
+        if(taxiInterval) clearInterval(taxiInterval);
+        taxiInterval = setInterval(() => {
+            let now = Date.now(); let deltaSecs = (now - taxiLastTick) / 1000; taxiLastTick = now;
+            if(!isTaxiPaused) {
+                taxiTimeTotal += deltaSecs; 
+                if (deltaSecs <= 2.0 && estaDetenido) taxiWaitSecs += deltaSecs; 
+                actualizarPrecioTaxi();
+            }
+            document.getElementById('taxi_tiempo').innerText = `${Math.floor(taxiTimeTotal/60).toString().padStart(2,'0')}:${Math.floor(taxiTimeTotal%60).toString().padStart(2,'0')}`;
+            document.getElementById('taxi_espera').innerText = `${Math.floor(taxiWaitSecs/60).toString().padStart(2,'0')}:${Math.floor(taxiWaitSecs%60).toString().padStart(2,'0')}`;
+        }, 1000);
+        
+        if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId);
+        taxiWatchId = navigator.geolocation.watchPosition((position) => {
+            let lat = position.coords.latitude; let lon = position.coords.longitude; let speed = position.coords.speed; let nowTime = Date.now();
+            if (taxiLat !== null) { 
+                let dKm = getDistanceFromLatLonInKm(taxiLat, taxiLon, lat, lon); 
+                if (!isTaxiPaused && (dKm * 1000 > 1.0)) { 
+                    taxiDist += dKm; 
+                    document.getElementById('taxi_distancia').innerHTML = taxiDist.toFixed(2) + "<span style='font-size:0.7rem;'>km</span>"; 
+                } 
+                if (speed !== null) estaDetenido = (speed < 0.5); else estaDetenido = ((dKm*1000) / ((nowTime - lastGpsTime)/1000) < 0.5);
+            }
+            taxiLat = lat; taxiLon = lon; lastGpsTime = nowTime;
+            if(map && currentPosMarker) currentPosMarker.setLatLng([lat, lon]);
+        }, (err) => {}, { enableHighAccuracy: true });
+    }
 
-    function initMapaLeaflet() { let latBase = -3.2586; let lonBase = -79.9553; map = L.map('mapa_calculadora').setView([latBase, lonBase], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(map); currentPosMarker = L.circleMarker([latBase, lonBase], {color: 'blue', radius: 6}).addTo(map); if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { currentPosMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]); map.setView([pos.coords.latitude, pos.coords.longitude], 14); }); } map.on('click', function(e) { if(markerDestino) map.removeLayer(markerDestino); markerDestino = L.marker(e.latlng).addTo(map); let miUbicacion = currentPosMarker.getLatLng(); let distLineaRecta = getDistanceFromLatLonInKm(miUbicacion.lat, miUbicacion.lng, e.latlng.lat, e.latlng.lng); let distRealAprox = distLineaRecta * 1.35; document.getElementById('calc_km').value = distRealAprox.toFixed(1); calcularEstimadoManual(); }); }
+    function pausarTaxi() {
+        isTaxiPaused = !isTaxiPaused; let btnPausa = document.getElementById('btn_taxi_pause');
+        if(isTaxiPaused) { btnPausa.innerText = "▶️ Reanudar"; btnPausa.style.background = "var(--save)"; } 
+        else { btnPausa.innerText = "⏸️ Pausar"; btnPausa.style.background = "var(--accent)"; taxiLastTick = Date.now(); lastGpsTime = Date.now(); }
+    }
+
+    function actualizarPrecioTaxi() { let p = cargarPerfiles()[perfilActivo]; taxiPriceFinal = p.base + (taxiDist * p.km) + ((taxiWaitSecs/60) * p.min); document.getElementById('taxi_precio').innerText = "$" + taxiPriceFinal.toFixed(2); }
+    
+    function detenerTaxi() { 
+        unlockScreen(); clearInterval(taxiInterval); if(taxiWatchId) navigator.geolocation.clearWatch(taxiWatchId); 
+        document.getElementById('btn_taxi_stop').style.display = 'none'; document.getElementById('btn_taxi_pause').style.display = 'none'; document.getElementById('btn_taxi_start').style.display = 'block'; 
+        abrirModal(); 
+        let perfilSelec = cargarPerfiles()[perfilActivo];
+        document.getElementById('monto_carrera').value = taxiPriceFinal.toFixed(2); document.getElementById('concepto_carrera').value = perfilSelec.nombre; document.getElementById('concepto_carrera').focus(); 
+        guardarHistorialTaxiLocal(perfilSelec.nombre, taxiDist.toFixed(2), taxiPriceFinal.toFixed(2), taxiTimeTotal, taxiWaitSecs);
+    }
+
+    function initMapaLeaflet() {
+        let latBase = -3.2586; let lonBase = -79.9553; 
+        map = L.map('mapa_calculadora').setView([latBase, lonBase], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© CARTO', maxZoom: 19 }).addTo(map);
+        currentPosMarker = L.circleMarker([latBase, lonBase], {color: 'blue', radius: 6}).addTo(map);
+        if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { currentPosMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]); map.setView([pos.coords.latitude, pos.coords.longitude], 14); }); }
+        map.on('click', function(e) { if(markerDestino) map.removeLayer(markerDestino); markerDestino = L.marker(e.latlng).addTo(map); let miUbicacion = currentPosMarker.getLatLng(); let distLineaRecta = getDistanceFromLatLonInKm(miUbicacion.lat, miUbicacion.lng, e.latlng.lat, e.latlng.lng); let distRealAprox = distLineaRecta * 1.35; document.getElementById('calc_km').value = distRealAprox.toFixed(1); calcularEstimadoManual(); });
+    }
     function calcularEstimadoManual() { let km = parseFloat(document.getElementById('calc_km').value) || 0; let p = cargarPerfiles()[perfilActivo]; let tiempoEstimado = (km / 5) * 2; let costo = p.base + (km * p.km) + (tiempoEstimado * p.min); document.getElementById('calc_precio').innerText = "$" + costo.toFixed(2); }
 
     function guardarHistorialTaxiLocal(perfil, km, monto, timeTotal, waitTotal) { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let f = new Date(); let horaStr = f.getHours().toString().padStart(2,'0') + ":" + f.getMinutes().toString().padStart(2,'0'); h.unshift({ hora: horaStr, fecha: obtenerFechaLocal(), perfil: perfil, km: km, monto: monto, timeTotal: timeTotal, waitTotal: waitTotal }); if(h.length > 20) h.pop(); localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h)); renderHistorialTaxi(); }
-    function borrarHistorialTaxi(idx) { if(confirm("¿Borrar este registro del taxímetro?")) { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); h.splice(idx, 1); localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h)); renderHistorialTaxi(); } }
+    function borrarHistorialTaxi(idx) { if(confirm("¿Borrar registro?")) { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); h.splice(idx, 1); localStorage.setItem('ruta360_historial_taxi', JSON.stringify(h)); renderHistorialTaxi(); } }
     function reanudarDesdeHistorial(idx) { if(!navigator.geolocation) return alert("Sin GPS."); let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let item = h[idx]; let perfiles = cargarPerfiles(); for(let key in perfiles) { if(perfiles[key].nombre === item.perfil) seleccionarPerfil(key); } taxiDist = parseFloat(item.km) || 0; taxiTimeTotal = parseFloat(item.timeTotal) || 0; taxiWaitSecs = parseFloat(item.waitTotal) || 0; taxiLat = null; taxiLon = null; taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now(); lockScreen(); arrancarMotorTaxi(); document.getElementById('taxi_tiempo').innerText = `${Math.floor(taxiTimeTotal/60).toString().padStart(2,'0')}:${Math.floor(taxiTimeTotal%60).toString().padStart(2,'0')}`; document.getElementById('taxi_espera').innerText = `${Math.floor(taxiWaitSecs/60).toString().padStart(2,'0')}:${Math.floor(taxiWaitSecs%60).toString().padStart(2,'0')}`; actualizarPrecioTaxi(); isTaxiPaused = false; pausarTaxi(); window.scrollTo(0, 0); }
     function renderHistorialTaxi() { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let div = document.getElementById('historial_taxi_local'); div.innerHTML = ''; if(h.length === 0) { div.innerHTML = '<p style="text-align:center; color:gray; font-size:0.7rem;">Tus próximos viajes aparecerán aquí.</p>'; return; } h.forEach((v, idx) => { div.innerHTML += `<div class="carrera-item"><div style="width:55%;"><b>${v.perfil}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} • ${v.hora} | ${v.km} km</span></div><div style="font-weight:bold; color:var(--text);">$${v.monto}</div><div style="display:flex; gap:5px;"><button style="background:var(--save); border:none; color:white; border-radius:6px; padding:5px 8px; font-size:0.7rem; cursor:pointer;" onclick="reanudarDesdeHistorial(${idx})">▶️</button><button style="background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" onclick="borrarHistorialTaxi(${idx})">×</button></div></div>`; }); }
 
     function guardarCarrera() { let monto = parseFloat(document.getElementById('monto_carrera').value); if(isNaN(monto) || monto <= 0) return alert("Ingresa un valor válido."); let numCorrelativo = parseInt(localStorage.getItem('ruta360_contador_viajes') || '0') + 1; localStorage.setItem('ruta360_contador_viajes', numCorrelativo); let concepto = document.getElementById('concepto_carrera').value.trim(); if(concepto === "") { concepto = "Carrera #" + String(numCorrelativo).padStart(6, '0'); } let horaViaje = document.getElementById('hora_carrera').value; let fechaActual = document.getElementById('fecha_reg').value; let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); viajes.push({ id: numCorrelativo, fecha: fechaActual, hora: horaViaje, monto: monto, concepto: concepto }); localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); try{document.getElementById('sonidoBeep').play();}catch(e){} cerrarModal(); document.getElementById('monto_carrera').value = ''; document.getElementById('concepto_carrera').value = ''; actualizarTotalCarreras(); buscarCliente(); }
     function borrarCarrera(id) { if(confirm("¿Borrar este viaje?")) { let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); viajes = viajes.filter(v => v.id !== id); localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); actualizarTotalCarreras(); buscarCliente(); } }
     function actualizarTotalCarreras() { let fechaActual = document.getElementById('fecha_reg').value; let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let listaHtml = document.getElementById('lista_carreras_hoy'); let total = 0, conteo = 0; listaHtml.innerHTML = ''; for(let i = viajes.length - 1; i >= 0; i--) { if(viajes[i].fecha === fechaActual) { total += viajes[i].monto; conteo++; let hr = viajes[i].hora ? `<b style="font-size:0.7rem; color:gray;">${viajes[i].hora}</b> ` : ''; listaHtml.innerHTML += `<div class="carrera-item"><span style="font-size:0.8rem;">🚕 ${hr}${viajes[i].concepto}</span><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${viajes[i].monto.toFixed(2)}</span><span onclick="borrarCarrera(${viajes[i].id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; } } document.getElementById('contador_carreras').innerText = `${conteo} Viajes`; if(total > 0) document.getElementById('cash').value = total.toFixed(2); else document.getElementById('cash').value = ''; }
-
     function cargarDatosDelDia() { let f = document.getElementById('fecha_reg').value; actualizarTotalCarreras(); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let rG = db.find(r => r.completa === f.split('-').reverse().join('/')); if(rG) { document.getElementById('h_taxi').value = rG.hTaxi || ''; document.getElementById('h_pred').value = rG.hPred || ''; document.getElementById('km_gps').value = rG.km || ''; document.getElementById('gas').value = rG.gas || ''; document.getElementById('save_val').value = rG.ahorro || 5; document.getElementById('val_guardia').value = (rG.gPagada !== undefined) ? rG.gPagada : 25; if(rG.salud && rG.salud.length === 3) { saludDia = {agua: rG.salud[0], postura: rG.salud[1], ejercicio: rG.salud[2]}; ['agua','postura','ejercicio'].forEach(t => { let b = document.getElementById('btn_'+t); if(saludDia[t]) b.classList.add('active'); else b.classList.remove('active'); }); } } else { document.getElementById('h_taxi').value = ''; document.getElementById('h_pred').value = ''; document.getElementById('km_gps').value = ''; document.getElementById('gas').value = ''; document.getElementById('save_val').value = 5; let fObj = new Date(f + 'T12:00:00'); document.getElementById('val_guardia').value = (fObj.getDay() === 0) ? 0 : 25; saludDia = {agua: false, postura: false, ejercicio: false}; ['agua','postura','ejercicio'].forEach(t => document.getElementById('btn_'+t).classList.remove('active')); } }
     function buscarCliente() { let txt = document.getElementById('buscador_cliente').value.toLowerCase(); let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let res = document.getElementById('lista_busqueda'); let totalMonto = 0, totalViajes = 0; res.innerHTML = ''; let mostrados = 0; for(let i = viajes.length - 1; i >= 0; i--) { let v = viajes[i]; if(v.concepto.toLowerCase().includes(txt)) { totalMonto += v.monto; totalViajes++; if (mostrados < 50) { let hr = v.hora ? `${v.hora}` : ''; res.innerHTML += `<div class="carrera-item"><div><b>${v.concepto}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} ${hr}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${v.monto.toFixed(2)}</span><span onclick="borrarCarrera(${v.id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; mostrados++; } } } if(totalViajes > 0) { document.getElementById('resumen_cliente').innerHTML = `${totalViajes} viajes | Total: <b style="color:var(--text)">$${totalMonto.toFixed(2)}</b>`; } else { document.getElementById('resumen_cliente').innerHTML = 'Sin resultados.'; } }
-
-    function registrarGastoOp() { let m = parseFloat(document.getElementById('monto_gasto_op').value); let c = document.getElementById('concepto_gasto_op').value.trim(); if(isNaN(m) || m<=0 || c==="") return alert("Datos inválidos."); let g = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); g.push({ fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false }); localStorage.setItem('ruta360_gastos_op', JSON.stringify(g)); document.getElementById('monto_gasto_op').value = ''; document.getElementById('concepto_gasto_op').value = ''; inicializar(); }
-    function borrarGastoOp(idx) { if(confirm("¿Borrar gasto?")) { let g = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); g.splice(idx, 1); localStorage.setItem('ruta360_gastos_op', JSON.stringify(g)); inicializar(); } }
-    function liquidarFlota() { if(confirm("¿Liquidar saldo a $0?")) { let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); db.forEach(r => r.liquidadoFlota = true); localStorage.setItem('ruta360_db', JSON.stringify(db)); let g = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); g.forEach(x => x.liquidadoFlota = true); localStorage.setItem('ruta360_gastos_op', JSON.stringify(g)); inicializar(); alert("Saldo en cero."); } }
-
-    // --- NUEVO EXPORTAR EXCEL PROFESIONAL (MENSUAL) ---
-    function exportarExcelProfesional() { 
-        cerrarMenu();
-        const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); 
-        if(db.length === 0) return alert("No hay datos para exportar.");
-        let data = db.map(r => ({
-            "Fecha": r.completa,
-            "Ingreso Bruto ($)": r.ing || 0,
-            "Gasolina ($)": r.gas || 0,
-            "Guardia ($)": (r.gPagada !== undefined) ? r.gPagada : 25,
-            "Ahorro Caja ($)": r.ahorro || 0,
-            "Plan Celular ($)": CELULAR,
-            "Sueldo Limpio NETO ($)": parseFloat((r.neto || 0).toFixed(2)),
-            "KM Recorridos": r.km || 0,
-            "Horas Taxi": r.hTaxi || 0,
-            "Valor x Hora ($)": parseFloat((r.netoHora||0).toFixed(2))
-        }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte_Mensual");
-        XLSX.writeFile(wb, "Ruta_Elite_360_ReporteMensual.xlsx"); 
-    }
-
-    // --- NUEVO EXPORTAR EXCEL PROFESIONAL (DUEÑO DE FLOTA) ---
-    function exportarFlotaProfesional() { 
-        const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); 
-        const gastos = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); 
-        let data = []; let totalG = 0, totalE = 0; 
-        
-        db.forEach(r => { 
-            if(!r.liquidadoFlota) { 
-                let g = r.gPagada !== undefined ? r.gPagada : 25; 
-                if(g > 0) { 
-                    data.push({"Fecha": r.completa, "Concepto": "Guardia Diaria Recaudada", "Ingreso ($)": g, "Egreso Gasto ($)": 0}); 
-                    totalG += g; 
-                } 
-            } 
-        }); 
-        gastos.forEach(g => { 
-            if(!g.liquidadoFlota) { 
-                data.push({"Fecha": g.fecha, "Concepto": g.concepto, "Ingreso ($)": 0, "Egreso Gasto ($)": g.monto}); 
-                totalE += g.monto; 
-            } 
-        }); 
-        
-        // Filas de totales
-        data.push({"Fecha": "------", "Concepto": "------------------------", "Ingreso ($)": "------", "Egreso Gasto ($)": "------"});
-        data.push({"Fecha": "TOTALES", "Concepto": "", "Ingreso ($)": totalG, "Egreso Gasto ($)": totalE});
-        data.push({"Fecha": "SALDO FINAL A ENTREGAR", "Concepto": "=>", "Ingreso ($)": totalG - totalE, "Egreso Gasto ($)": 0});
-        
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte_Dueno");
-        XLSX.writeFile(wb, "Reporte_Dueno_Flota.xlsx"); 
-    }
-
-    // --- NUEVO SISTEMA: FONDO PLAN CELULAR ---
-    function registrarPagoPlan() {
-        let monto = prompt("💸 Ingresa el valor exacto que vas a pagar/descontar del Plan Celular (Ej: 22.50):");
-        if (monto !== null && monto.trim() !== "") {
-            monto = parseFloat(monto);
-            if (!isNaN(monto) && monto > 0) {
-                let pagos = JSON.parse(localStorage.getItem('ruta360_pagos_cel') || '[]');
-                pagos.push({fecha: obtenerFechaLocal(), monto: monto});
-                localStorage.setItem('ruta360_pagos_cel', JSON.stringify(pagos));
-                inicializar();
-                alert(`¡Pago de $${monto.toFixed(2)} registrado con éxito! El resto se queda como ahorro.`);
-            } else {
-                alert("Por favor ingresa un número válido.");
-            }
-        }
-    }
 
     let timerState = localStorage.getItem('t_state') || 'stopped', timerStart = parseInt(localStorage.getItem('t_start')) || 0, timerAcum = parseInt(localStorage.getItem('t_acum')) || 0, intervalReloj;
     function renderReloj() { let actual = timerAcum + (timerState === 'running' ? (Date.now() - timerStart) : 0); let sT = Math.floor(actual / 1000); document.getElementById('display_reloj').innerText = `${Math.floor(sT/3600).toString().padStart(2,'0')}:${Math.floor((sT%3600)/60).toString().padStart(2,'0')}:${(sT%60).toString().padStart(2,'0')}`; }
@@ -555,87 +589,207 @@
     function guardar() { document.getElementById('sonidoDinero').play(); let fActual = obtenerFechaLocal(); let fInput = document.getElementById('fecha_reg').value; if(fInput === fActual) { localStorage.setItem('t_state', 'stopped'); localStorage.setItem('t_start', '0'); localStorage.setItem('t_acum', '0'); } setTimeout(() => { const fObj = new Date(fInput + 'T12:00:00'); let fechaStr = `${fObj.getDate().toString().padStart(2,'0')}/${(fObj.getMonth()+1).toString().padStart(2,'0')}/${fObj.getFullYear()}`; const km = parseFloat(document.getElementById('km_gps').value) || 0; const ing = parseFloat(document.getElementById('cash').value) || 0; const gas = parseFloat(document.getElementById('gas').value) || 0; const ahorro = parseFloat(document.getElementById('save_val').value) || 0; const hTaxi = parseFloat(document.getElementById('h_taxi').value) || 0; const hPred = parseFloat(document.getElementById('h_pred').value) || 0; let cobroGuardia = parseFloat(document.getElementById('val_guardia').value) || 0; const salud = [saludDia.agua, saludDia.postura, saludDia.ejercicio]; let config = JSON.parse(localStorage.getItem('ruta360_config') || '{"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0}'); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); const neto = ing - gas - cobroGuardia - ahorro - CELULAR; let nuevoRegistro = { completa: fechaStr, fecha: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][fObj.getDay()], neto, ahorro, ing, gas, km, hTaxi, hPred, salud, netoHora: (hTaxi>0 ? neto/hTaxi : 0), gPagada: cobroGuardia }; let index = db.findIndex(r => r.completa === fechaStr); if(index !== -1) { let kmViejo = (db[index].km || 0); config.odometroGlobal = (config.odometroGlobal || 0) - kmViejo + km; nuevoRegistro.liquidadoFlota = db[index].liquidadoFlota; db[index] = nuevoRegistro; } else { config.odometroGlobal = (config.odometroGlobal || 0) + km; db.push(nuevoRegistro); } localStorage.setItem('ruta360_config', JSON.stringify(config)); db.sort((a,b) => a.completa.split('/').reverse().join('').localeCompare(b.completa.split('/').reverse().join(''))); localStorage.setItem('ruta360_db', JSON.stringify(db)); location.reload(); }, 600); }
     function borrarRegistro(idx) { if(confirm("¿Borrar día entero?")) { let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let conf = JSON.parse(localStorage.getItem('ruta360_config')); conf.odometroGlobal = Math.max(0, (conf.odometroGlobal||0) - (db[idx].km || 0)); db.splice(idx, 1); localStorage.setItem('ruta360_db', JSON.stringify(db)); localStorage.setItem('ruta360_config', JSON.stringify(conf)); location.reload(); } }
 
+    // --- ALCANCÍAS REALES (FLOTA) ---
+    function renderFondosReales() {
+        let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
+        let gastosOp = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
+        let pagosCel = JSON.parse(localStorage.getItem('ruta360_pagos_cel') || '[]');
+        let retirosAhorro = JSON.parse(localStorage.getItem('ruta360_retiros_ahorro') || '[]');
+        
+        let totalGuardiaIn = 0, totalCelularIn = 0, totalAhorroIn = 0;
+        db.forEach(r => {
+            if(!r.liquidadoFlota) totalGuardiaIn += (r.gPagada !== undefined ? r.gPagada : 25);
+            totalCelularIn += CELULAR; // $1 por cada día registrado
+            totalAhorroIn += (r.ahorro || 0);
+        });
+
+        let totalGuardiaOut = 0; gastosOp.forEach(g => { if(!g.liquidadoFlota) totalGuardiaOut += g.monto; });
+        let totalCelularOut = 0; pagosCel.forEach(p => totalCelularOut += p.monto);
+        let totalAhorroOut = 0; retirosAhorro.forEach(a => totalAhorroOut += a.monto);
+
+        document.getElementById('saldo_guardias').innerText = "$" + (totalGuardiaIn - totalGuardiaOut).toFixed(2);
+        document.getElementById('saldo_celular').innerText = "$" + (totalCelularIn - totalCelularOut).toFixed(2);
+        document.getElementById('saldo_ahorro').innerText = "$" + (totalAhorroIn - totalAhorroOut).toFixed(2);
+
+        _dibujarLista(gastosOp.filter(g=>!g.liquidadoFlota), 'lista_retiros_guardia', 'gastos_op');
+        _dibujarLista(pagosCel, 'lista_retiros_celular', 'pagos_cel');
+        _dibujarLista(retirosAhorro, 'lista_retiros_ahorro', 'retiros_ahorro');
+    }
+
+    function _dibujarLista(arr, divId, storageKey) {
+        let html = '';
+        if(arr.length === 0) html = '<div style="font-size:0.65rem; color:gray; text-align:center;">Sin movimientos.</div>';
+        for(let i=arr.length-1; i>=Math.max(0, arr.length-5); i--) {
+            html += `<div style="display:flex; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid var(--border); padding:5px 0;"><span>${arr[i].fecha} - ${arr[i].concepto}</span><span>-$${arr[i].monto.toFixed(2)} <b style="color:var(--danger); cursor:pointer;" onclick="borrarRetiro('${storageKey}', ${i})">×</b></span></div>`;
+        }
+        document.getElementById(divId).innerHTML = html;
+    }
+
+    function registrarRetiro(tipo) {
+        let montoInp, conceptoInp, storageKey;
+        if(tipo === 'guardia') { montoInp = 'monto_gasto_op'; conceptoInp = 'concepto_gasto_op'; storageKey = 'ruta360_gastos_op'; }
+        if(tipo === 'celular') { montoInp = 'monto_gasto_cel'; conceptoInp = null; storageKey = 'ruta360_pagos_cel'; }
+        if(tipo === 'ahorro') { montoInp = 'monto_retiro_ahorro'; conceptoInp = null; storageKey = 'ruta360_retiros_ahorro'; }
+
+        let m = parseFloat(document.getElementById(montoInp).value);
+        let c = conceptoInp ? document.getElementById(conceptoInp).value.trim() : (tipo === 'celular' ? 'Pago Factura' : 'Retiro Ahorro');
+        if(isNaN(m) || m<=0) return alert("Ingresa un monto válido.");
+
+        let arr = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        arr.push({ fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false });
+        localStorage.setItem(storageKey, JSON.stringify(arr));
+        document.getElementById(montoInp).value = ''; if(conceptoInp) document.getElementById(conceptoInp).value = '';
+        renderFondosReales();
+    }
+    
+    function borrarRetiro(storageKey, idx) {
+        if(confirm("¿Borrar este registro?")) {
+            let arr = JSON.parse(localStorage.getItem(storageKey) || '[]'); arr.splice(idx, 1); localStorage.setItem(storageKey, JSON.stringify(arr)); renderFondosReales();
+        }
+    }
+    
+    function liquidarFondo(tipo) {
+        if(tipo === 'guardia' && confirm("¿Entregar saldo de guardias al dueño y dejar en $0?")) {
+            let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); db.forEach(r => r.liquidadoFlota = true); localStorage.setItem('ruta360_db', JSON.stringify(db));
+            let g = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]'); g.forEach(x => x.liquidadoFlota = true); localStorage.setItem('ruta360_gastos_op', JSON.stringify(g));
+            renderFondosReales(); alert("Saldo de Guardias liquidado.");
+        }
+    }
+
+    // --- FINANZAS AVANZADAS ---
+    let fechaFinanzas = new Date();
+    const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    function navegarMes(delta) { fechaFinanzas.setMonth(fechaFinanzas.getMonth() + delta); renderFinanzasMes(); }
+
+    function renderFinanzasMes() {
+        let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
+        let mesStr = (fechaFinanzas.getMonth() + 1).toString().padStart(2, '0');
+        let anioStr = fechaFinanzas.getFullYear().toString();
+        let claveBuscada = mesStr + '/' + anioStr;
+
+        document.getElementById('finanzas_mes_lbl').innerText = `${mesesNombres[fechaFinanzas.getMonth()]} ${anioStr}`;
+        
+        let mesData = db.filter(r => r.completa.substring(3) === claveBuscada);
+        let totalNeto = 0, totalBruto = 0, totalGas = 0, totalAhorro = 0, totalGuardias = 0, diasMes = mesData.length;
+        
+        let semanasNeto = [0, 0, 0, 0, 0]; // Hasta 5 semanas
+        let maxSemanaNeto = 0;
+
+        mesData.forEach(r => {
+            totalNeto += r.neto; totalBruto += r.ing; totalGas += r.gas; totalAhorro += (r.ahorro||0); totalGuardias += (r.gPagada||0);
+            let diaNum = parseInt(r.completa.split('/')[0]);
+            let semIdx = Math.floor((diaNum - 1) / 7); if(semIdx>4) semIdx=4;
+            semanasNeto[semIdx] += r.neto;
+            if(semanasNeto[semIdx] > maxSemanaNeto) maxSemanaNeto = semanasNeto[semIdx];
+        });
+
+        document.getElementById('mes_neto').innerText = "$" + totalNeto.toFixed(2);
+        document.getElementById('mes_prom').innerText = diasMes > 0 ? "$" + (totalNeto/diasMes).toFixed(2) : "$0.00";
+
+        // Dibujar Gráfico Semanal
+        let chartHtml = '';
+        for(let i=0; i<5; i++) {
+            let altura = maxSemanaNeto > 0 ? (semanasNeto[i] / maxSemanaNeto) * 100 : 0;
+            if (altura === 0 && i === 4) continue; // Ocultar sem 5 si está vacía
+            chartHtml += `<div class="chart-bar-wrapper"><span class="chart-val">$${Math.round(semanasNeto[i])}</span><div class="chart-bar" style="height:${altura}px;"></div><span class="chart-lbl">Sem ${i+1}</span></div>`;
+        }
+        document.getElementById('chart_semanas').innerHTML = chartHtml;
+
+        let htmlDetalle = `<div style="display:flex; justify-content:space-between; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid var(--border);"><span>Días Trabajados</span><b>${diasMes} días</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Ingreso Bruto (Calle)</span><b>$${totalBruto.toFixed(2)}</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:var(--danger);"><span>Guardias y Gasolina</span><b>-$${(totalGuardias + totalGas).toFixed(2)}</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:var(--save);"><span>Ahorro Extraído</span><b>+$${totalAhorro.toFixed(2)}</b></div>`;
+        document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
+    }
+
+    // --- EXPORTACIÓN PROFESIONAL (SHEETJS) ---
+    function exportarExcelReal() {
+        let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
+        if(db.length === 0) return alert("No hay datos para exportar.");
+        
+        let mesStr = (fechaFinanzas.getMonth() + 1).toString().padStart(2, '0');
+        let anioStr = fechaFinanzas.getFullYear().toString();
+        let claveBuscada = mesStr + '/' + anioStr;
+        let mesData = db.filter(r => r.completa.substring(3) === claveBuscada);
+        
+        if(mesData.length===0) return alert("No hay datos en este mes.");
+
+        let dataFormat = mesData.map(r => ({
+            "Fecha": r.completa,
+            "Ingreso Bruto ($)": r.ing,
+            "Combustible ($)": r.gas,
+            "Guardia ($)": r.gPagada !== undefined ? r.gPagada : 25,
+            "Plan Celular ($)": 1,
+            "Ahorro ($)": r.ahorro || 0,
+            "Sueldo Neto ($)": r.neto,
+            "Horas Taxi": r.hTaxi || 0,
+            "Ganancia X Hora ($)": r.netoHora ? parseFloat(r.netoHora.toFixed(2)) : 0
+        }));
+
+        let ws = XLSX.utils.json_to_sheet(dataFormat);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte_" + mesesNombres[fechaFinanzas.getMonth()]);
+        XLSX.writeFile(wb, `Ruta_Elite_Reporte_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`);
+    }
+
+    function exportarExcelFlota() {
+        let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
+        let gastos = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
+        
+        let dataFormat = [];
+        let totalG = 0, totalE = 0;
+        
+        db.forEach(r => { 
+            if(!r.liquidadoFlota) { 
+                let g = r.gPagada !== undefined ? r.gPagada : 25; 
+                if(g > 0) { dataFormat.push({ "Fecha": r.completa, "Concepto": "Guardia Diaria", "Ingreso ($)": g, "Egreso ($)": 0 }); totalG += g; } 
+            } 
+        });
+        gastos.forEach(g => { 
+            if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha, "Concepto": g.concepto, "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
+        });
+
+        dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
+        dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
+
+        let ws = XLSX.utils.json_to_sheet(dataFormat);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Dueño");
+        XLSX.writeFile(wb, "Reporte_Dueño_Flota.xlsx");
+    }
+
+    function renderHistorialGeneral() {
+        let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
+        let contHistorial = document.getElementById('contenedor_historial'); let htmlFinal = '<h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin-top:10px;">📝 Historial Diario Global</h3>'; 
+        if(db.length === 0) { htmlFinal += '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin registros.</p>'; } else { 
+            let mostradosH = 0; 
+            for(let i = db.length - 1; i >= 0; i--) { 
+                if (mostradosH >= window.limiteHistorial) break; 
+                htmlFinal += `<div class="carrera-item" style="border-bottom:1px solid var(--border);"><div style="width:75%;"><b>${db[i].completa}</b><br><span style="font-size:0.7rem; color:gray;">Neto: <b style="color:var(--text);">$${db[i].neto.toFixed(2)}</b> | Bruto: $${db[i].ing}</span></div><button style="background:none; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" onclick="borrarRegistro(${i})">🗑️</button></div>`; 
+                mostradosH++; 
+            } 
+            if (db.length > window.limiteHistorial) { htmlFinal += `<button onclick="cargarMasHistorial()" class="btn" style="background:var(--bg); color:var(--text); border:1px solid var(--border); margin-top:10px;">Ver más antiguos ⬇️</button>`; } 
+        } 
+        contHistorial.innerHTML = htmlFinal;
+    }
+
     function inicializar() {
         try { if(localStorage.getItem('ruta360_mode') === 'true') toggleMode(); } catch(e){}
         refrescarBotonesPerfil(); seleccionarPerfil('A');
         document.getElementById('fecha_reg').value = obtenerFechaLocal(); cargarDatosDelDia();
-        renderVIP();
+        renderVIP(); renderFondosReales(); renderFinanzasMes(); renderHistorialGeneral();
+        
         if(timerState === 'running') intervalReloj = setInterval(renderReloj, 1000); renderReloj();
         
         let configStr = localStorage.getItem('ruta360_config'); let config = configStr ? JSON.parse(configStr) : {"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0};
         if(config.odometroGlobal === undefined) { config.odometroGlobal = config.kmAcumulado || 0; config.ultimoCambioAceite = 0; localStorage.setItem('ruta360_config', JSON.stringify(config)); }
-        const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); const gastos = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
-        
-        // --- RENDERIZADO FONDO CELULAR ---
-        try {
-            let totalDiasTrabajados = db.length;
-            let totalRecaudadoCelular = totalDiasTrabajados * CELULAR;
-            let pagosCelular = JSON.parse(localStorage.getItem('ruta360_pagos_cel') || '[]');
-            let totalPagadoCelular = pagosCelular.reduce((sum, pago) => sum + pago.monto, 0);
-            let saldoCelular = totalRecaudadoCelular - totalPagadoCelular;
-            
-            document.getElementById('saldo_celular').innerText = "$" + saldoCelular.toFixed(2);
-            document.getElementById('detalle_celular').innerText = `Recaudado: $${totalRecaudadoCelular.toFixed(2)} | Pagado: $${totalPagadoCelular.toFixed(2)}`;
-        } catch(e) {}
-        
+        const db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
         let diasSinKm = db.filter(r => r.km === 0 || r.km === undefined || r.km === "").map(r => r.completa); let alertaDiv = document.getElementById('alerta_km'); if(diasSinKm.length > 0) { alertaDiv.style.display = 'block'; alertaDiv.innerHTML = '⚠️ <b>¡Faltan KM en:</b> ' + diasSinKm.join(', ') + '</b>'; } else { alertaDiv.style.display = 'none'; }
-
+        
         try { let odoActual = config.odometroGlobal; let ultimoCambio = config.ultimoCambioAceite; let kmDesdeCambio = odoActual - ultimoCambio; if(kmDesdeCambio < 0) kmDesdeCambio = 0; let metaAceite = ultimoCambio + CICLO_M; document.getElementById('txt_motor').innerHTML = `Próx: <b>${Math.round(metaAceite)}</b><br><span style="font-size:0.6rem; color:gray;">Faltan ${Math.max(0, Math.round(metaAceite - odoActual))} km</span>`; document.getElementById('bar_motor').style.width = Math.min((kmDesdeCambio/CICLO_M)*100, 100) + "%"; if(kmDesdeCambio >= 4500) document.getElementById('btn_motor').style.display = 'block'; document.getElementById('bar_caja').style.width = ((config.ciclosMotor%4)/4*100) + "%"; document.getElementById('txt_caja').innerText = "Ciclo " + (config.ciclosMotor%4) + " de 4"; if(config.ciclosMotor > 0 && config.ciclosMotor % 4 === 0) document.getElementById('btn_caja').style.display = 'block'; } catch(e) {}
         
-        let currentYear = new Date().getFullYear().toString(); document.getElementById('lbl_anio_actual').innerText = currentYear;
-        let tN=0, tHTaxi=0, totalHPred=0; let mesesData = {}; let aniosFiscales = {}; let tGuardiaFlota = 0; let htmlMinDetalle = ''; 
-        
-        // Variables para gráfico semanal del mes actual
-        let currentMonthNum = new Date().getMonth() + 1;
-        let semanasMesActual = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        
-        db.forEach(r => { 
-            let partesFecha = r.completa.split('/'); let dia = parseInt(partesFecha[0]); let mes = partesFecha[1]; let anio = partesFecha[2]; 
-            tHTaxi+=(r.hTaxi||0); totalHPred += (r.hPred||0); 
-            if(!r.liquidadoFlota) { tGuardiaFlota += (r.gPagada !== undefined ? r.gPagada : 25); } 
-            if(r.hPred && r.hPred > 0) { htmlMinDetalle += `<div class="carrera-item" style="border-bottom:1px solid var(--border);"><span style="font-size:0.85rem;">📅 ${r.completa}</span><span style="font-weight:bold; color:var(--accent);">${r.hPred} hrs</span></div>`; } 
-            
-            if(!aniosFiscales[anio]) aniosFiscales[anio] = { ingresos: 0, guardias: 0, ahorro: 0, neto: 0, hPred: 0 }; 
-            aniosFiscales[anio].ingresos += (r.ing || 0); aniosFiscales[anio].guardias += (r.gPagada !== undefined ? r.gPagada : 25); aniosFiscales[anio].ahorro += (r.ahorro || 0); aniosFiscales[anio].neto += (r.neto || 0); aniosFiscales[anio].hPred += (r.hPred || 0); 
-            
-            if(anio === currentYear) { 
-                tN += r.neto; let mesClave = mes + '/' + anio; 
-                if(!mesesData[mesClave]) mesesData[mesClave] = { ingresos: 0, guardias: 0, ahorro: 0, neto: 0, gasolina: 0, hPred: 0, dias: 0 }; 
-                mesesData[mesClave].ingresos += (r.ing || 0); mesesData[mesClave].guardias += (r.gPagada !== undefined ? r.gPagada : 25); mesesData[mesClave].ahorro += (r.ahorro || 0); mesesData[mesClave].neto += (r.neto || 0); mesesData[mesClave].gasolina += (r.gas || 0); mesesData[mesClave].hPred += (r.hPred || 0); mesesData[mesClave].dias += 1; 
-                
-                // --- CÁLCULO SEMANAL PARA EL GRÁFICO ---
-                if(parseInt(mes) === currentMonthNum) {
-                    let numSemana = Math.ceil(dia / 7);
-                    if(numSemana > 5) numSemana = 5; 
-                    semanasMesActual[numSemana] += r.neto;
-                }
-            } 
-        });
-        
-        // --- RENDERIZADO GRÁFICO SEMANAL ---
-        try {
-            let maxSemana = Math.max(semanasMesActual[1], semanasMesActual[2], semanasMesActual[3], semanasMesActual[4], semanasMesActual[5], 1); // El 1 evita división por cero
-            let htmlGrafico = '';
-            for(let i=1; i<=5; i++) {
-                let valSemana = semanasMesActual[i];
-                let porcentaje = (valSemana / maxSemana) * 100;
-                htmlGrafico += `
-                <div class="bar-week-container">
-                    <div class="bar-week-label">Semana ${i}</div>
-                    <div class="bar-week-track"><div class="bar-week-fill" style="width: ${porcentaje}%;"></div></div>
-                    <div class="bar-week-val">$${valSemana.toFixed(0)}</div>
-                </div>`;
-            }
-            document.getElementById('grafico_semanal').innerHTML = htmlGrafico;
-        } catch(e) {}
-        
-        try { document.getElementById('neto_total').innerText = "$" + tN.toFixed(2); document.getElementById('promedio_hora').innerText = "$" + (tHTaxi>0?tN/tHTaxi:0).toFixed(2) + "/hr"; let htmlMeses = ''; const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]; let clavesMeses = Object.keys(mesesData).reverse(); if(clavesMeses.length === 0) { htmlMeses = '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin datos en ' + currentYear + '</p>'; } else { clavesMeses.forEach(clave => { let numMes = parseInt(clave.split('/')[0]) - 1; let anio = clave.split('/')[1]; let mData = mesesData[clave]; htmlMeses += `<div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:12px; border-left:4px solid var(--accent);"><h4 style="margin:0 0 10px 0; font-size:0.85rem; color:var(--text);">${nombresMeses[numMes]} ${anio}</h4><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ingreso Bruto</span> <b>$${mData.ingresos.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Guardias Pagadas</span> <b style="color:var(--danger);">-$${mData.guardias.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Combustible</span> <b style="color:var(--danger);">-$${mData.gasolina.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Plan Celular (${mData.dias} días)</span> <b style="color:var(--danger);">-$${(mData.dias * CELULAR).toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Ahorro a la Caja</span> <b style="color:var(--save);">+$${mData.ahorro.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; color:var(--text);"><span>Ganancia Neta</span> <b>$${mData.neto.toFixed(2)}</b></div></div>`; }); } document.getElementById('lista_meses_finanzas').innerHTML = htmlMeses; } catch(e) {}
-        
-        try { document.getElementById('total_h_pred').innerText = totalHPred + " hrs"; let htmlMin = ''; let clavesMeses = Object.keys(mesesData).reverse(); const nombresMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]; if(clavesMeses.length === 0) htmlMin = '<p style="text-align:center; font-size:0.75rem; color:gray;">Aún no hay horas registradas.</p>'; else { clavesMeses.forEach(clave => { let hP = mesesData[clave].hPred || 0; if(hP > 0) { let numMes = parseInt(clave.split('/')[0]) - 1; let anio = clave.split('/')[1]; htmlMin += `<div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px;"><span style="font-weight:600; color:var(--text); font-size:0.85rem;">${nombresMeses[numMes]} ${anio}</span><span style="font-weight:300; font-size:1.2rem; color:var(--accent);">${hP} hrs</span></div>`; } }); if(htmlMin === '') htmlMin = '<p style="text-align:center; font-size:0.75rem; color:gray;">No se registraron horas este año.</p>'; } document.getElementById('lista_ministerio').innerHTML = htmlMin; if(htmlMinDetalle === '') htmlMinDetalle = '<p style="text-align:center; font-size:0.75rem; color:gray;">Aún no hay registros diarios.</p>'; document.getElementById('lista_ministerio_detalle').innerHTML = htmlMinDetalle; } catch(e) {}
-
-        let tGastosFlota = 0; try { let listaG = document.getElementById('lista_gastos_op'); listaG.innerHTML = ''; let gastosPendientes = gastos.filter(g => !g.liquidadoFlota); if(gastosPendientes.length === 0) listaG.innerHTML = '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin gastos registrados.</p>'; else { for(let i = gastos.length - 1; i >= 0; i--) { if(!gastos[i].liquidadoFlota) { tGastosFlota += gastos[i].monto; listaG.innerHTML += `<div class="carrera-item"><div><b>${gastos[i].concepto}</b><br><span style="font-size:0.65rem; color:gray;">${gastos[i].fecha}</span></div><div><span style="font-weight:600; margin-right:10px;">-$${gastos[i].monto.toFixed(2)}</span><span onclick="borrarGastoOp(${i})" style="cursor:pointer; color:gray;">×</span></div></div>`; } } } document.getElementById('saldo_guardias').innerText = "$" + (tGuardiaFlota - tGastosFlota).toFixed(2); document.getElementById('detalle_fondo').innerText = `Recaudado: $${tGuardiaFlota.toFixed(2)} | Gastado: $${tGastosFlota.toFixed(2)}`; } catch(e) {}
-
-        try { let contHistorial = document.getElementById('contenedor_historial'); let htmlFinal = ''; let pastYears = Object.keys(aniosFiscales).filter(a => a !== currentYear).sort().reverse(); if(pastYears.length > 0) { htmlFinal += '<h3 style="font-size:0.85rem; color:gray; text-transform:uppercase;">🏛️ Años Fiscales Cerrados</h3>'; pastYears.forEach(a => { let aD = aniosFiscales[a]; htmlFinal += `<div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:20px;"><h4 style="margin:0 0 10px 0; font-size:1.1rem; color:var(--text);">Año Fiscal ${a}</h4><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Total Bruto Generado</span> <b>$${aD.ingresos.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:gray;"><span>Total Ahorro</span> <b>+$${aD.ahorro.toFixed(2)}</b></div><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; color:var(--text);"><span>NETO ANUAL</span> <b>$${aD.neto.toFixed(2)}</b></div></div>`; }); } htmlFinal += '<h3 style="font-size:0.85rem; color:gray; text-transform:uppercase; margin-top:10px;">📝 Historial Diario</h3>'; if(db.length === 0) { htmlFinal += '<p style="text-align:center; font-size:0.75rem; color:gray;">Sin registros.</p>'; } else { let mostradosH = 0; for(let i = db.length - 1; i >= 0; i--) { if (mostradosH >= window.limiteHistorial) break; htmlFinal += `<div class="carrera-item" style="border-bottom:1px solid var(--border);"><div style="width:75%;"><b>${db[i].completa}</b><br><span style="font-size:0.7rem; color:gray;">Neto: <b style="color:var(--text);">$${db[i].neto.toFixed(2)}</b> | Bruto: $${db[i].ing}</span></div><button style="background:none; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" onclick="borrarRegistro(${i})">🗑️</button></div>`; mostradosH++; } if (db.length > window.limiteHistorial) { htmlFinal += `<button onclick="cargarMasHistorial()" class="btn" style="background:var(--bg); color:var(--text); border:1px solid var(--border); margin-top:10px;">Ver más antiguos ⬇️</button>`; } } contHistorial.innerHTML = htmlFinal; } catch(e) {}
+        try { let htmlMin = '', htmlMinDetalle = '', totalHPred = 0; db.forEach(r => { totalHPred += (r.hPred||0); if(r.hPred && r.hPred > 0) htmlMinDetalle += `<div class="carrera-item"><span style="font-size:0.85rem;">📅 ${r.completa}</span><span style="font-weight:bold; color:var(--accent);">${r.hPred} hrs</span></div>`; }); document.getElementById('total_h_pred').innerText = totalHPred + " hrs"; if(htmlMinDetalle==='') htmlMinDetalle='<p style="text-align:center; color:gray; font-size:0.75rem;">Sin registros diarios</p>'; document.getElementById('lista_ministerio_detalle').innerHTML = htmlMinDetalle; } catch(e){}
     }
 </script>
 </body>
