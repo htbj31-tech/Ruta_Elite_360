@@ -124,7 +124,7 @@
     <a href="#" onclick="abrirTabDesdeMenu('tab_clientes')">👥 Base de Clientes VIP</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_ministerio')">📖 Ministerio Público</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_historial')">📜 Historial de Jornadas</a>
-    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Exportar Excel Real (Mes)</a>
+    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Exportar Excel (Mes)</a>
     <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (.json)</a>
     <a href="#" onclick="document.getElementById('file_import').click()">📂 Restaurar Respaldo</a>
 </div>
@@ -133,7 +133,7 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.22 • PRO EXCEL & FINANZAS</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.23 • REPARACIÓN DE CAJA & EXCEL</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -228,10 +228,12 @@
             
             <h3 style="margin:20px 0 5px; font-size:0.8rem; color:gray; text-transform:uppercase; text-align:center;">📊 Ganancias por Semana</h3>
             <div class="chart-container" id="chart_semanas">
-                </div>
+            </div>
 
             <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
             <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
+            
+            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📊 Descargar Excel de este Mes</button>
         </div>
     </div>
 
@@ -570,11 +572,56 @@
     function reanudarDesdeHistorial(idx) { if(!navigator.geolocation) return alert("Sin GPS."); let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let item = h[idx]; let perfiles = cargarPerfiles(); for(let key in perfiles) { if(perfiles[key].nombre === item.perfil) seleccionarPerfil(key); } taxiDist = parseFloat(item.km) || 0; taxiTimeTotal = parseFloat(item.timeTotal) || 0; taxiWaitSecs = parseFloat(item.waitTotal) || 0; taxiLat = null; taxiLon = null; taxiLastTick = Date.now(); estaDetenido = true; lastGpsTime = Date.now(); lockScreen(); arrancarMotorTaxi(); document.getElementById('taxi_tiempo').innerText = `${Math.floor(taxiTimeTotal/60).toString().padStart(2,'0')}:${Math.floor(taxiTimeTotal%60).toString().padStart(2,'0')}`; document.getElementById('taxi_espera').innerText = `${Math.floor(taxiWaitSecs/60).toString().padStart(2,'0')}:${Math.floor(taxiWaitSecs%60).toString().padStart(2,'0')}`; actualizarPrecioTaxi(); isTaxiPaused = false; pausarTaxi(); window.scrollTo(0, 0); }
     function renderHistorialTaxi() { let h = JSON.parse(localStorage.getItem('ruta360_historial_taxi') || '[]'); let div = document.getElementById('historial_taxi_local'); div.innerHTML = ''; if(h.length === 0) { div.innerHTML = '<p style="text-align:center; color:gray; font-size:0.7rem;">Tus próximos viajes aparecerán aquí.</p>'; return; } h.forEach((v, idx) => { div.innerHTML += `<div class="carrera-item"><div style="width:55%;"><b>${v.perfil}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} • ${v.hora} | ${v.km} km</span></div><div style="font-weight:bold; color:var(--text);">$${v.monto}</div><div style="display:flex; gap:5px;"><button style="background:var(--save); border:none; color:white; border-radius:6px; padding:5px 8px; font-size:0.7rem; cursor:pointer;" onclick="reanudarDesdeHistorial(${idx})">▶️</button><button style="background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" onclick="borrarHistorialTaxi(${idx})">×</button></div></div>`; }); }
 
-    function guardarCarrera() { let monto = parseFloat(document.getElementById('monto_carrera').value); if(isNaN(monto) || monto <= 0) return alert("Ingresa un valor válido."); let numCorrelativo = parseInt(localStorage.getItem('ruta360_contador_viajes') || '0') + 1; localStorage.setItem('ruta360_contador_viajes', numCorrelativo); let concepto = document.getElementById('concepto_carrera').value.trim(); if(concepto === "") { concepto = "Carrera #" + String(numCorrelativo).padStart(6, '0'); } let horaViaje = document.getElementById('hora_carrera').value; let fechaActual = document.getElementById('fecha_reg').value; let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); viajes.push({ id: numCorrelativo, fecha: fechaActual, hora: horaViaje, monto: monto, concepto: concepto }); localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); try{document.getElementById('sonidoBeep').play();}catch(e){} cerrarModal(); document.getElementById('monto_carrera').value = ''; document.getElementById('concepto_carrera').value = ''; actualizarTotalCarreras(); buscarCliente(); }
-    function borrarCarrera(id) { if(confirm("¿Borrar este viaje?")) { let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); viajes = viajes.filter(v => v.id !== id); localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); actualizarTotalCarreras(); buscarCliente(); } }
-    function actualizarTotalCarreras() { let fechaActual = document.getElementById('fecha_reg').value; let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let listaHtml = document.getElementById('lista_carreras_hoy'); let total = 0, conteo = 0; listaHtml.innerHTML = ''; for(let i = viajes.length - 1; i >= 0; i--) { if(viajes[i].fecha === fechaActual) { total += viajes[i].monto; conteo++; let hr = viajes[i].hora ? `<b style="font-size:0.7rem; color:gray;">${viajes[i].hora}</b> ` : ''; listaHtml.innerHTML += `<div class="carrera-item"><span style="font-size:0.8rem;">🚕 ${hr}${viajes[i].concepto}</span><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${viajes[i].monto.toFixed(2)}</span><span onclick="borrarCarrera(${viajes[i].id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; } } document.getElementById('contador_carreras').innerText = `${conteo} Viajes`; if(total > 0) document.getElementById('cash').value = total.toFixed(2); else document.getElementById('cash').value = ''; }
+    function guardarCarrera() { 
+        let monto = parseFloat(document.getElementById('monto_carrera').value); 
+        if(isNaN(monto) || monto <= 0) return alert("Ingresa un valor válido."); 
+        let numCorrelativo = parseInt(localStorage.getItem('ruta360_contador_viajes') || '0') + 1; 
+        localStorage.setItem('ruta360_contador_viajes', numCorrelativo); 
+        let concepto = document.getElementById('concepto_carrera').value.trim(); 
+        if(concepto === "") { concepto = "Carrera #" + String(numCorrelativo).padStart(6, '0'); } 
+        let horaViaje = document.getElementById('hora_carrera').value; 
+        let fechaActual = document.getElementById('fecha_reg').value; 
+        let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
+        
+        // El ID ÚNICO nos asegura que borrar siempre funcionará perfecto
+        viajes.push({ id: Date.now(), correlativo: numCorrelativo, fecha: fechaActual, hora: horaViaje, monto: monto, concepto: concepto }); 
+        
+        localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); 
+        try{document.getElementById('sonidoBeep').play();}catch(e){} 
+        cerrarModal(); 
+        document.getElementById('monto_carrera').value = ''; 
+        document.getElementById('concepto_carrera').value = ''; 
+        actualizarTotalCarreras(); 
+        buscarCliente(); 
+    }
+    function borrarCarrera(id) { 
+        if(confirm("¿Borrar este viaje?")) { 
+            let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
+            viajes = viajes.filter(v => v.id !== id && v.correlativo !== id); // Busca por ambos para asegurar compatibilidad con datos viejos
+            localStorage.setItem('ruta360_viajes', JSON.stringify(viajes)); 
+            actualizarTotalCarreras(); 
+            buscarCliente(); 
+        } 
+    }
+    function actualizarTotalCarreras() { 
+        let fechaActual = document.getElementById('fecha_reg').value; 
+        let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); 
+        let listaHtml = document.getElementById('lista_carreras_hoy'); 
+        let total = 0, conteo = 0; listaHtml.innerHTML = ''; 
+        for(let i = viajes.length - 1; i >= 0; i--) { 
+            if(viajes[i].fecha === fechaActual) { 
+                total += viajes[i].monto; conteo++; 
+                let hr = viajes[i].hora ? `<b style="font-size:0.7rem; color:gray;">${viajes[i].hora}</b> ` : ''; 
+                // Usamos el ID de verdad o el correlativo si es dato antiguo
+                let idPasar = viajes[i].id ? viajes[i].id : viajes[i].correlativo;
+                listaHtml.innerHTML += `<div class="carrera-item"><span style="font-size:0.8rem;">🚕 ${hr}${viajes[i].concepto}</span><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${viajes[i].monto.toFixed(2)}</span><span onclick="borrarCarrera(${idPasar})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; 
+            } 
+        } 
+        document.getElementById('contador_carreras').innerText = `${conteo} Viajes`; 
+        if(total > 0) document.getElementById('cash').value = total.toFixed(2); else document.getElementById('cash').value = ''; 
+    }
     function cargarDatosDelDia() { let f = document.getElementById('fecha_reg').value; actualizarTotalCarreras(); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let rG = db.find(r => r.completa === f.split('-').reverse().join('/')); if(rG) { document.getElementById('h_taxi').value = rG.hTaxi || ''; document.getElementById('h_pred').value = rG.hPred || ''; document.getElementById('km_gps').value = rG.km || ''; document.getElementById('gas').value = rG.gas || ''; document.getElementById('save_val').value = rG.ahorro || 5; document.getElementById('val_guardia').value = (rG.gPagada !== undefined) ? rG.gPagada : 25; if(rG.salud && rG.salud.length === 3) { saludDia = {agua: rG.salud[0], postura: rG.salud[1], ejercicio: rG.salud[2]}; ['agua','postura','ejercicio'].forEach(t => { let b = document.getElementById('btn_'+t); if(saludDia[t]) b.classList.add('active'); else b.classList.remove('active'); }); } } else { document.getElementById('h_taxi').value = ''; document.getElementById('h_pred').value = ''; document.getElementById('km_gps').value = ''; document.getElementById('gas').value = ''; document.getElementById('save_val').value = 5; let fObj = new Date(f + 'T12:00:00'); document.getElementById('val_guardia').value = (fObj.getDay() === 0) ? 0 : 25; saludDia = {agua: false, postura: false, ejercicio: false}; ['agua','postura','ejercicio'].forEach(t => document.getElementById('btn_'+t).classList.remove('active')); } }
-    function buscarCliente() { let txt = document.getElementById('buscador_cliente').value.toLowerCase(); let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let res = document.getElementById('lista_busqueda'); let totalMonto = 0, totalViajes = 0; res.innerHTML = ''; let mostrados = 0; for(let i = viajes.length - 1; i >= 0; i--) { let v = viajes[i]; if(v.concepto.toLowerCase().includes(txt)) { totalMonto += v.monto; totalViajes++; if (mostrados < 50) { let hr = v.hora ? `${v.hora}` : ''; res.innerHTML += `<div class="carrera-item"><div><b>${v.concepto}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} ${hr}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${v.monto.toFixed(2)}</span><span onclick="borrarCarrera(${v.id})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; mostrados++; } } } if(totalViajes > 0) { document.getElementById('resumen_cliente').innerHTML = `${totalViajes} viajes | Total: <b style="color:var(--text)">$${totalMonto.toFixed(2)}</b>`; } else { document.getElementById('resumen_cliente').innerHTML = 'Sin resultados.'; } }
+    function buscarCliente() { let txt = document.getElementById('buscador_cliente').value.toLowerCase(); let viajes = JSON.parse(localStorage.getItem('ruta360_viajes') || '[]'); let res = document.getElementById('lista_busqueda'); let totalMonto = 0, totalViajes = 0; res.innerHTML = ''; let mostrados = 0; for(let i = viajes.length - 1; i >= 0; i--) { let v = viajes[i]; if(v.concepto.toLowerCase().includes(txt)) { totalMonto += v.monto; totalViajes++; if (mostrados < 50) { let hr = v.hora ? `${v.hora}` : ''; let idPasar = v.id ? v.id : v.correlativo; res.innerHTML += `<div class="carrera-item"><div><b>${v.concepto}</b><br><span style="font-size:0.65rem; color:gray;">${v.fecha} ${hr}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:600; margin-right:10px;">$${v.monto.toFixed(2)}</span><span onclick="borrarCarrera(${idPasar})" style="cursor:pointer; color:var(--danger); font-size:1.2rem;">×</span></div></div>`; mostrados++; } } } if(totalViajes > 0) { document.getElementById('resumen_cliente').innerHTML = `${totalViajes} viajes | Total: <b style="color:var(--text)">$${totalMonto.toFixed(2)}</b>`; } else { document.getElementById('resumen_cliente').innerHTML = 'Sin resultados.'; } }
 
     let timerState = localStorage.getItem('t_state') || 'stopped', timerStart = parseInt(localStorage.getItem('t_start')) || 0, timerAcum = parseInt(localStorage.getItem('t_acum')) || 0, intervalReloj;
     function renderReloj() { let actual = timerAcum + (timerState === 'running' ? (Date.now() - timerStart) : 0); let sT = Math.floor(actual / 1000); document.getElementById('display_reloj').innerText = `${Math.floor(sT/3600).toString().padStart(2,'0')}:${Math.floor((sT%3600)/60).toString().padStart(2,'0')}:${(sT%60).toString().padStart(2,'0')}`; }
@@ -595,6 +642,12 @@
         let gastosOp = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
         let pagosCel = JSON.parse(localStorage.getItem('ruta360_pagos_cel') || '[]');
         let retirosAhorro = JSON.parse(localStorage.getItem('ruta360_retiros_ahorro') || '[]');
+        
+        // Asignamos IDs a los registros viejos que no lo tengan para que la X no falle
+        let fixIds = (list, key) => { let changed=false; list.forEach((x) => { if(!x.id){ x.id = Date.now() + Math.random(); changed=true;} }); if(changed) localStorage.setItem(key, JSON.stringify(list)); return list; };
+        gastosOp = fixIds(gastosOp, 'ruta360_gastos_op');
+        pagosCel = fixIds(pagosCel, 'ruta360_pagos_cel');
+        retirosAhorro = fixIds(retirosAhorro, 'ruta360_retiros_ahorro');
         
         let totalGuardiaIn = 0, totalCelularIn = 0, totalAhorroIn = 0;
         db.forEach(r => {
@@ -620,7 +673,8 @@
         let html = '';
         if(arr.length === 0) html = '<div style="font-size:0.65rem; color:gray; text-align:center;">Sin movimientos.</div>';
         for(let i=arr.length-1; i>=Math.max(0, arr.length-5); i--) {
-            html += `<div style="display:flex; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid var(--border); padding:5px 0;"><span>${arr[i].fecha} - ${arr[i].concepto}</span><span>-$${arr[i].monto.toFixed(2)} <b style="color:var(--danger); cursor:pointer;" onclick="borrarRetiro('${storageKey}', ${i})">×</b></span></div>`;
+            // AHORA MANDAMOS EL ID UNICO A BORRAR, NO EL ÍNDICE
+            html += `<div style="display:flex; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid var(--border); padding:5px 0;"><span>${arr[i].fecha} - ${arr[i].concepto}</span><span>-$${arr[i].monto.toFixed(2)} <b style="color:var(--danger); cursor:pointer; font-size:1.1rem; padding:0 5px;" onclick="borrarRetiro('${storageKey}', ${arr[i].id})">×</b></span></div>`;
         }
         document.getElementById(divId).innerHTML = html;
     }
@@ -636,15 +690,25 @@
         if(isNaN(m) || m<=0) return alert("Ingresa un monto válido.");
 
         let arr = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        arr.push({ fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false });
+        // GUARDAMOS CON UN ID ÚNICO
+        arr.push({ id: Date.now(), fecha: new Date().toLocaleDateString(), concepto: c, monto: m, liquidadoFlota: false });
+        
         localStorage.setItem(storageKey, JSON.stringify(arr));
         document.getElementById(montoInp).value = ''; if(conceptoInp) document.getElementById(conceptoInp).value = '';
         renderFondosReales();
     }
     
-    function borrarRetiro(storageKey, idx) {
-        if(confirm("¿Borrar este registro?")) {
-            let arr = JSON.parse(localStorage.getItem(storageKey) || '[]'); arr.splice(idx, 1); localStorage.setItem(storageKey, JSON.stringify(arr)); renderFondosReales();
+    // Función corregida: borra buscando el ID exacto, sin importar el orden
+    function borrarRetiro(storageKey, id_a_borrar) {
+        if(confirm("¿Estás seguro de que quieres borrar este registro?")) {
+            let storageName = storageKey === 'gastos_op' ? 'ruta360_gastos_op' : (storageKey === 'pagos_cel' ? 'ruta360_pagos_cel' : 'ruta360_retiros_ahorro');
+            let arr = JSON.parse(localStorage.getItem(storageName) || '[]'); 
+            
+            // Filtramos manteniendo solo los que NO tengan el ID a borrar
+            arr = arr.filter(item => item.id !== id_a_borrar);
+            
+            localStorage.setItem(storageName, JSON.stringify(arr)); 
+            renderFondosReales();
         }
     }
     
@@ -703,17 +767,19 @@
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
-    // --- EXPORTACIÓN PROFESIONAL (SHEETJS) ---
+    // --- EXPORTACIÓN PROFESIONAL (SHEETJS) CORREGIDA ---
     function exportarExcelReal() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
-        if(db.length === 0) return alert("No hay datos para exportar.");
+        
+        // Validación MUY IMPORTANTE
+        if(db.length === 0) return alert("⚠️ No tienes datos. ¡Recuerda presionar 'GUARDAR JORNADA' al final de cada día en la pestaña Registro para que los datos pasen al reporte!");
         
         let mesStr = (fechaFinanzas.getMonth() + 1).toString().padStart(2, '0');
         let anioStr = fechaFinanzas.getFullYear().toString();
         let claveBuscada = mesStr + '/' + anioStr;
         let mesData = db.filter(r => r.completa.substring(3) === claveBuscada);
         
-        if(mesData.length===0) return alert("No hay datos en este mes.");
+        if(mesData.length===0) return alert(`⚠️ No hay jornadas guardadas para el mes de ${mesesNombres[fechaFinanzas.getMonth()]}.`);
 
         let dataFormat = mesData.map(r => ({
             "Fecha": r.completa,
@@ -730,7 +796,9 @@
         let ws = XLSX.utils.json_to_sheet(dataFormat);
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Reporte_" + mesesNombres[fechaFinanzas.getMonth()]);
-        XLSX.writeFile(wb, `Ruta_Elite_Reporte_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`);
+        
+        // Aquí forzamos la descarga del archivo real
+        XLSX.writeFile(wb, `Ruta_Elite_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`);
     }
 
     function exportarExcelFlota() {
@@ -750,13 +818,15 @@
             if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha, "Concepto": g.concepto, "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
         });
 
+        if(dataFormat.length === 0) return alert("No hay fondos acumulados ni gastos para entregar a la flota.");
+
         dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
         dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
 
         let ws = XLSX.utils.json_to_sheet(dataFormat);
         let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Dueño");
-        XLSX.writeFile(wb, "Reporte_Dueño_Flota.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Dueno");
+        XLSX.writeFile(wb, "Reporte_Dueno_Flota.xlsx");
     }
 
     function renderHistorialGeneral() {
