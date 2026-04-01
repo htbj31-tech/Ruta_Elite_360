@@ -16,7 +16,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <style>
         :root { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --primary: #ffffff; --accent: #2563eb; --success: #16a34a; --save: #d97706; --danger: #dc2626; --taxi: #eab308; --border: #e5e7eb; }
@@ -123,7 +122,7 @@
     <a href="#" onclick="abrirTabDesdeMenu('tab_clientes')">👥 Base de Clientes VIP</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_ministerio')">📖 Ministerio Público</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_historial')">📜 Historial de Jornadas</a>
-    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Enviar Excel (Mes)</a>
+    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Ver Reporte Mes (PDF/Copiar)</a>
     <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (.json)</a>
     <a href="#" onclick="document.getElementById('file_import').click()">📂 Restaurar Respaldo</a>
 </div>
@@ -132,7 +131,7 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.26 • DESCARGA DE EXCEL FORZADA</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.27 • REPORTES WEB NATIVOS</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -232,7 +231,7 @@
             <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
             <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
             
-            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📤 Obtener Excel de este Mes</button>
+            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📊 Ver Reporte Mes (PDF/Copiar)</button>
         </div>
     </div>
 
@@ -302,7 +301,7 @@
             <div class="fondo-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-weight:bold; color:var(--text);">Fondo Guardias</span>
-                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Obtener Excel Dueño</button>
+                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Reporte Dueño (PDF)</button>
                 </div>
                 <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
                 <span id="saldo_guardias" style="display:block; font-size:2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
@@ -752,50 +751,57 @@
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
-    // ====================================================================
-    // MOTOR DE DESCARGA: PARCHE VISUAL PARA MÓVILES (BOTONAZO GIGANTE)
-    // ====================================================================
-    
-    function generarYCompartirExcel(dataFormat, nombreHoja, nombreArchivo) {
-        try {
-            let ws = XLSX.utils.json_to_sheet(dataFormat);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
-            
-            // Convertimos todo a un texto larguísimo en Base64 (imposible de bloquear)
-            let base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-            let dataUri = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + base64;
 
-            // Intentamos que se descargue solo primero
-            try {
-                let a = document.createElement("a");
-                a.href = dataUri;
-                a.download = nombreArchivo;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } catch(e) {}
-            
-            // EL PARCHE: Como los celulares ignoran el click anterior, lanzamos este cartel gigante
-            let cont = document.getElementById('caja_descarga_emergencia');
-            if(!cont) {
-                cont = document.createElement('div');
-                cont.id = 'caja_descarga_emergencia';
-                cont.style.cssText = "position:fixed; top:50%; left:5%; width:90%; transform:translateY(-50%); background:var(--accent); color:white; padding:25px; border-radius:16px; z-index:9999; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5); border: 2px solid white; box-sizing:border-box;";
-                document.body.appendChild(cont);
-            }
-            cont.innerHTML = `
-                <div style="font-size:3rem; margin-bottom:10px;">📊</div>
-                <h3 style="margin:0 0 10px 0; color:white;">¡Tu Excel está listo!</h3>
-                <p style="font-size:0.85rem; margin:0 0 20px 0; opacity:0.9;">Tu teléfono bloquea las descargas en segundo plano. Toca el botón de abajo para guardar <b>${nombreArchivo}</b> tú mismo.</p>
-                <a href="${dataUri}" download="${nombreArchivo}" style="display:inline-block; background:white; color:var(--accent); padding:15px 20px; border-radius:12px; font-weight:bold; text-decoration:none; margin-bottom:20px; width:80%; font-size:1.1rem; box-shadow:0 4px 10px rgba(0,0,0,0.2);">📥 DESCARGAR AQUÍ</a>
-                <br>
-                <button onclick="document.getElementById('caja_descarga_emergencia').remove()" style="background:transparent; border:1px solid rgba(255,255,255,0.5); color:white; padding:10px 20px; border-radius:8px; font-size:0.9rem;">Cerrar Mensaje</button>
-            `;
+    // ====================================================================
+    // MOTOR DE REPORTES WEB NATIVO (PESTAÑA NUEVA VISUAL)
+    // ====================================================================
 
-        } catch(error) {
-            alert("Error al armar el archivo: " + error.message);
-        }
+    function generarPaginaHtml(titulo, htmlContenido) {
+        let htmlCuerpo = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${titulo}</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background: #f3f4f6; color: #1f2937; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .btn-print { display: block; width: 100%; max-width: 300px; margin: 0 auto 20px; background: #2563eb; color: white; padding: 15px; text-align: center; text-decoration: none; border-radius: 10px; font-weight: bold; border: none; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .btn-print:active { transform: scale(0.98); }
+                .tabla-contenedor { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 15px; }
+                table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.9rem; }
+                th { background: #1f2937; color: white; padding: 12px; text-align: center; border: 1px solid #374151; }
+                td { padding: 10px; border: 1px solid #e5e7eb; text-align: center; }
+                tr:nth-child(even) { background-color: #f9fafb; }
+                .ing { color: #16a34a; font-weight: bold; }
+                .out { color: #dc2626; font-weight: bold; }
+                .neto { color: #2563eb; font-weight: bold; font-size: 1.05rem; }
+                .totales td { background: #e5e7eb; font-weight: bold; border-top: 2px solid #9ca3af; }
+                @media print { 
+                    .btn-print, .tip { display: none; } 
+                    body { background: white; padding: 0; } 
+                    .tabla-contenedor { box-shadow: none; padding:0; } 
+                    table { width: 100%; min-width: auto; font-size: 10pt; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>🚕 ${titulo}</h2>
+            </div>
+            <button class="btn-print" onclick="window.print()">🖨️ Guardar como PDF / Imprimir</button>
+            <p class="tip" style="text-align:center; font-size:0.8rem; color:gray; margin-bottom:20px;">💡 Tip: Mantén presionado sobre la tabla, selecciona todo, cópialo y pégalo en Google Sheets o Excel.</p>
+            <div class="tabla-contenedor">
+                ${htmlContenido}
+            </div>
+        </body>
+        </html>
+        `;
+
+        let blob = new Blob([htmlCuerpo], {type: 'text/html'});
+        let url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
     }
 
     function exportarExcelReal() {
@@ -809,20 +815,41 @@
         
         if(mesData.length === 0) return alert(`⚠️ No hay jornadas para ${mesesNombres[fechaFinanzas.getMonth()]} del ${anioStr}.`);
 
-        let dataFormat = mesData.map(r => ({
-            "Fecha": r.completa || "",
-            "Ingreso Bruto ($)": r.ing || 0,
-            "Combustible ($)": r.gas || 0,
-            "Guardia ($)": r.gPagada !== undefined ? r.gPagada : 25,
-            "Plan Celular ($)": 1,
-            "Ahorro ($)": r.ahorro || 0,
-            "Sueldo Neto ($)": r.neto || 0,
-            "Horas Taxi": r.hTaxi || 0,
-            "Ganancia X Hora ($)": r.netoHora ? parseFloat(r.netoHora.toFixed(2)) : 0
-        }));
+        let tBruto=0, tGas=0, tGua=0, tCel=0, tAho=0, tNeto=0, tHrs=0;
+        
+        let tabla = `<table><thead><tr>
+            <th>Fecha</th><th>Ingreso Bruto</th><th>Gasolina</th><th>Guardia</th><th>Celular</th><th>Ahorro</th><th>Sueldo Neto</th><th>Hrs Taxi</th>
+            </tr></thead><tbody>`;
 
-        let nombreArchivo = `Ruta_Elite_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`;
-        generarYCompartirExcel(dataFormat, "Reporte_Mes", nombreArchivo);
+        mesData.forEach(r => {
+            let guardia = r.gPagada !== undefined ? r.gPagada : 25;
+            tBruto += r.ing||0; tGas += r.gas||0; tGua += guardia; tCel += 1; tAho += r.ahorro||0; tNeto += r.neto||0; tHrs += r.hTaxi||0;
+            
+            tabla += `<tr>
+                <td>${r.completa}</td>
+                <td class="ing">$${(r.ing||0).toFixed(2)}</td>
+                <td class="out">-$${(r.gas||0).toFixed(2)}</td>
+                <td class="out">-$${guardia.toFixed(2)}</td>
+                <td class="out">-$1.00</td>
+                <td class="ing">+$${(r.ahorro||0).toFixed(2)}</td>
+                <td class="neto">$${(r.neto||0).toFixed(2)}</td>
+                <td>${(r.hTaxi||0).toFixed(2)}</td>
+            </tr>`;
+        });
+
+        tabla += `<tr class="totales">
+            <td>TOTALES</td>
+            <td class="ing">$${tBruto.toFixed(2)}</td>
+            <td class="out">-$${tGas.toFixed(2)}</td>
+            <td class="out">-$${tGua.toFixed(2)}</td>
+            <td class="out">-$${tCel.toFixed(2)}</td>
+            <td class="ing">+$${tAho.toFixed(2)}</td>
+            <td class="neto">$${tNeto.toFixed(2)}</td>
+            <td>${tHrs.toFixed(2)}</td>
+        </tr></tbody></table>`;
+
+        let tituloStr = `Reporte Mensual - ${mesesNombres[fechaFinanzas.getMonth()]} ${anioStr}`;
+        generarPaginaHtml(tituloStr, tabla);
     }
 
     function exportarExcelFlota() {
@@ -835,19 +862,39 @@
         db.forEach(r => { 
             if(!r.liquidadoFlota) { 
                 let g = r.gPagada !== undefined ? r.gPagada : 25; 
-                if(g > 0) { dataFormat.push({ "Fecha": r.completa || "", "Concepto": "Guardia Diaria", "Ingreso ($)": g, "Egreso ($)": 0 }); totalG += g; } 
+                if(g > 0) { dataFormat.push({ fecha: r.completa || "", concepto: "Guardia Diaria", ingreso: g, egreso: 0 }); totalG += g; } 
             } 
         });
         gastos.forEach(g => { 
-            if(!g.liquidadoFlota) { dataFormat.push({ "Fecha": g.fecha || "", "Concepto": g.concepto || "Gasto", "Ingreso ($)": 0, "Egreso ($)": g.monto }); totalE += g.monto; } 
+            if(!g.liquidadoFlota) { dataFormat.push({ fecha: g.fecha || "", concepto: g.concepto || "Gasto Operativo", ingreso: 0, egreso: g.monto }); totalE += g.monto; } 
         });
 
         if(dataFormat.length === 0) return alert("⚠️ No hay fondos acumulados ni gastos para la flota.");
 
-        dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
-        dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
+        let tabla = `<table><thead><tr>
+            <th>Fecha</th><th>Concepto</th><th>Ingreso a Flota</th><th>Gasto Extraído</th>
+            </tr></thead><tbody>`;
 
-        generarYCompartirExcel(dataFormat, "Liquidacion_Dueno", "Reporte_Dueno_Flota.xlsx");
+        dataFormat.forEach(d => {
+            tabla += `<tr>
+                <td>${d.fecha}</td>
+                <td>${d.concepto}</td>
+                <td class="${d.ingreso > 0 ? 'ing' : ''}">${d.ingreso > 0 ? '$'+d.ingreso.toFixed(2) : '-'}</td>
+                <td class="${d.egreso > 0 ? 'out' : ''}">${d.egreso > 0 ? '-$'+d.egreso.toFixed(2) : '-'}</td>
+            </tr>`;
+        });
+
+        tabla += `<tr class="totales">
+            <td colspan="2" style="text-align:right;">TOTALES:</td>
+            <td class="ing">$${totalG.toFixed(2)}</td>
+            <td class="out">-$${totalE.toFixed(2)}</td>
+        </tr>
+        <tr class="totales" style="background: #2563eb; color:white;">
+            <td colspan="3" style="text-align:right;">SALDO FINAL A ENTREGAR:</td>
+            <td style="font-size:1.2rem;">$${(totalG - totalE).toFixed(2)}</td>
+        </tr></tbody></table>`;
+
+        generarPaginaHtml("Liquidación de Dueño / Flota", tabla);
     }
 
     function renderHistorialGeneral() {
@@ -884,4 +931,4 @@
     }
 </script>
 </body>
-    </html>
+</html>
