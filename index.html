@@ -123,7 +123,7 @@
     <a href="#" onclick="abrirTabDesdeMenu('tab_clientes')">👥 Base de Clientes VIP</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_ministerio')">📖 Ministerio Público</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_historial')">📜 Historial de Jornadas</a>
-    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Exportar Excel (Mes)</a>
+    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Enviar Excel (Mes)</a>
     <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (.json)</a>
     <a href="#" onclick="document.getElementById('file_import').click()">📂 Restaurar Respaldo</a>
 </div>
@@ -132,7 +132,7 @@
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.24 • EXCEL MÓVIL FORZADO</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.25 • EXCEL NATIVO COMPARTIR</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -232,7 +232,7 @@
             <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
             <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
             
-            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📊 Descargar Excel de este Mes</button>
+            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📤 Compartir Excel del Mes</button>
         </div>
     </div>
 
@@ -302,7 +302,7 @@
             <div class="fondo-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-weight:bold; color:var(--text);">Fondo Guardias</span>
-                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📊 Excel Dueño</button>
+                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Enviar Excel Dueño</button>
                 </div>
                 <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
                 <span id="saldo_guardias" style="display:block; font-size:2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
@@ -631,7 +631,6 @@
     function guardar() { document.getElementById('sonidoDinero').play(); let fActual = obtenerFechaLocal(); let fInput = document.getElementById('fecha_reg').value; if(fInput === fActual) { localStorage.setItem('t_state', 'stopped'); localStorage.setItem('t_start', '0'); localStorage.setItem('t_acum', '0'); } setTimeout(() => { const fObj = new Date(fInput + 'T12:00:00'); let fechaStr = `${fObj.getDate().toString().padStart(2,'0')}/${(fObj.getMonth()+1).toString().padStart(2,'0')}/${fObj.getFullYear()}`; const km = parseFloat(document.getElementById('km_gps').value) || 0; const ing = parseFloat(document.getElementById('cash').value) || 0; const gas = parseFloat(document.getElementById('gas').value) || 0; const ahorro = parseFloat(document.getElementById('save_val').value) || 0; const hTaxi = parseFloat(document.getElementById('h_taxi').value) || 0; const hPred = parseFloat(document.getElementById('h_pred').value) || 0; let cobroGuardia = parseFloat(document.getElementById('val_guardia').value) || 0; const salud = [saludDia.agua, saludDia.postura, saludDia.ejercicio]; let config = JSON.parse(localStorage.getItem('ruta360_config') || '{"kmAcumulado": 0, "ciclosMotor": 0, "odometroGlobal": 0, "ultimoCambioAceite": 0}'); let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); const neto = ing - gas - cobroGuardia - ahorro - CELULAR; let nuevoRegistro = { completa: fechaStr, fecha: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][fObj.getDay()], neto, ahorro, ing, gas, km, hTaxi, hPred, salud, netoHora: (hTaxi>0 ? neto/hTaxi : 0), gPagada: cobroGuardia }; let index = db.findIndex(r => r.completa === fechaStr); if(index !== -1) { let kmViejo = (db[index].km || 0); config.odometroGlobal = (config.odometroGlobal || 0) - kmViejo + km; nuevoRegistro.liquidadoFlota = db[index].liquidadoFlota; db[index] = nuevoRegistro; } else { config.odometroGlobal = (config.odometroGlobal || 0) + km; db.push(nuevoRegistro); } localStorage.setItem('ruta360_config', JSON.stringify(config)); db.sort((a,b) => a.completa.split('/').reverse().join('').localeCompare(b.completa.split('/').reverse().join(''))); localStorage.setItem('ruta360_db', JSON.stringify(db)); location.reload(); }, 600); }
     function borrarRegistro(idx) { if(confirm("¿Borrar día entero?")) { let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]'); let conf = JSON.parse(localStorage.getItem('ruta360_config')); conf.odometroGlobal = Math.max(0, (conf.odometroGlobal||0) - (db[idx].km || 0)); db.splice(idx, 1); localStorage.setItem('ruta360_db', JSON.stringify(db)); localStorage.setItem('ruta360_config', JSON.stringify(conf)); location.reload(); } }
 
-    // --- ALCANCÍAS REALES (FLOTA) ---
     function renderFondosReales() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
         let gastosOp = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
@@ -708,7 +707,6 @@
         }
     }
 
-    // --- FINANZAS AVANZADAS ---
     let fechaFinanzas = new Date();
     const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
@@ -754,19 +752,58 @@
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
-    // =========================================================
-    // NUEVO MOTOR DE DESCARGA: ESPECÍFICO PARA VENCER A LOS MÓVILES
-    // =========================================================
+
+    // =================================================================
+    // MOTOR DE DESCARGA AVANZADO: USA EL COMPARTIR DEL TELÉFONO (SHARE API)
+    // =================================================================
+    
+    // Función central para generar y compartir el Excel
+    function generarYCompartirExcel(dataFormat, nombreHoja, nombreArchivo) {
+        try {
+            let ws = XLSX.utils.json_to_sheet(dataFormat);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+            
+            // Convertimos el Excel a un formato de archivo que el celular entienda
+            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            let file = new File([blob], nombreArchivo, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Verificamos si el teléfono soporta compartir archivos directamente
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: nombreArchivo,
+                    text: 'Aquí tienes tu reporte Excel de Ruta Élite 360.'
+                }).then(() => {
+                    console.log('Compartido con éxito');
+                }).catch((error) => {
+                    console.log('Compartir cancelado o falló', error);
+                });
+            } else {
+                // Si el navegador es viejo o no soporta compartir, forzamos la descarga clásica
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = nombreArchivo;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert(`✅ Archivo guardado. Revisa la carpeta de "Descargas" o "Mis Archivos" en tu celular.`);
+            }
+        } catch(error) {
+            alert("Hubo un error al crear el archivo: " + error.message);
+        }
+    }
+
     function exportarExcelReal() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
-        
         if(db.length === 0) return alert("⚠️ No tienes datos guardados en la base principal.");
         
         let mesStr = (fechaFinanzas.getMonth() + 1).toString().padStart(2, '0');
         let anioStr = fechaFinanzas.getFullYear().toString();
         let claveBuscada = mesStr + '/' + anioStr;
-        
-        // Usamos includes para que no falle si la fecha tiene un formato extraño
         let mesData = db.filter(r => r.completa && r.completa.includes(claveBuscada));
         
         if(mesData.length === 0) return alert(`⚠️ No hay jornadas guardadas para ${mesesNombres[fechaFinanzas.getMonth()]} del ${anioStr}.`);
@@ -783,30 +820,8 @@
             "Ganancia X Hora ($)": r.netoHora ? parseFloat(r.netoHora.toFixed(2)) : 0
         }));
 
-        let ws = XLSX.utils.json_to_sheet(dataFormat);
-        let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte_Mes");
-        
         let nombreArchivo = `Ruta_Elite_${mesesNombres[fechaFinanzas.getMonth()]}_${anioStr}.xlsx`;
-
-        // Generamos el archivo usando un Blob (esto fuerza al navegador a respetar el .xlsx y su contenido)
-        try {
-            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            let url = URL.createObjectURL(blob);
-            
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = nombreArchivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert(`✅ ¡Éxito! Se han exportado los datos de ${mesData.length} días.`);
-        } catch(error) {
-            alert("Hubo un error al crear el archivo: " + error.message);
-        }
+        generarYCompartirExcel(dataFormat, "Reporte_Mes", nombreArchivo);
     }
 
     function exportarExcelFlota() {
@@ -831,28 +846,7 @@
         dataFormat.push({ "Fecha": "", "Concepto": "TOTALES", "Ingreso ($)": totalG, "Egreso ($)": totalE });
         dataFormat.push({ "Fecha": "", "Concepto": "SALDO FINAL A ENTREGAR", "Ingreso ($)": totalG - totalE, "Egreso ($)": "" });
 
-        let ws = XLSX.utils.json_to_sheet(dataFormat);
-        let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Dueno");
-
-        // Usamos el mismo motor reforzado aquí
-        try {
-            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            let url = URL.createObjectURL(blob);
-            
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = "Reporte_Dueno_Flota.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert(`✅ ¡Éxito! Reporte del dueño generado.`);
-        } catch(error) {
-            alert("Hubo un error al crear el archivo: " + error.message);
-        }
+        generarYCompartirExcel(dataFormat, "Liquidacion_Dueno", "Reporte_Dueno_Flota.xlsx");
     }
 
     function renderHistorialGeneral() {
