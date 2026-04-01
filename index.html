@@ -106,6 +106,25 @@
         .chart-val { font-size: 0.65rem; font-weight: bold; margin-bottom: 5px; color: var(--text); }
 
         .fondo-card { text-align:center; padding:15px; border:1px solid var(--border); border-radius:12px; margin-bottom:15px; background:var(--bg); }
+
+        /* Estilos exclusivos para la pantalla de reporte */
+        #pantalla_reporte { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f3f4f6; z-index: 9999; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .tabla-reporte { width: 100%; border-collapse: collapse; background: white; font-size: 0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 20px;}
+        .tabla-reporte th { background: #1f2937; color: white; padding: 12px 8px; text-align: center; border: 1px solid #374151; }
+        .tabla-reporte td { padding: 10px 8px; border: 1px solid #e5e7eb; text-align: center; color: #1f2937; }
+        .tabla-reporte tr:nth-child(even) { background-color: #f9fafb; }
+        .tabla-reporte .ing { color: #16a34a; font-weight: bold; }
+        .tabla-reporte .out { color: #dc2626; font-weight: bold; }
+        .tabla-reporte .neto { color: #2563eb; font-weight: bold; font-size: 1rem; }
+        .tabla-reporte .totales td { background: #e5e7eb; font-weight: bold; border-top: 2px solid #9ca3af; }
+        
+        @media print { 
+            body * { visibility: hidden; }
+            #pantalla_reporte, #pantalla_reporte * { visibility: visible; }
+            #pantalla_reporte { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: white; }
+            .no-print { display: none !important; }
+            .tabla-reporte { box-shadow: none; font-size: 10pt; }
+        }
     </style>
 </head>
 <body onload="inicializar()">
@@ -116,22 +135,35 @@
 <input type="file" id="file_import" style="display:none" accept=".json" onchange="importarBackup(event)">
 <div id="overlay_menu" class="overlay-menu" onclick="cerrarMenu()"></div>
 
+<div id="pantalla_reporte">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;" class="no-print">
+        <button onclick="cerrarReporteVisual()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">⬅️</button>
+        <button onclick="window.print()" style="background:var(--accent); color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; font-size:0.9rem; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖨️ PDF / Imprimir</button>
+    </div>
+    <div id="contenido_reporte" style="overflow-x: auto;"></div>
+    <div class="no-print" style="text-align:center; margin-top:20px; padding:15px; background:white; border-radius:8px; border:1px solid var(--border);">
+        <p style="font-size:0.8rem; color:gray; margin:0;">💡 <b>Tip de Copiado:</b> Mantén presionado un número de la tabla, arrastra para seleccionar toda la cuadrícula, dale a "Copiar" y pégalo en Excel o Google Sheets.</p>
+    </div>
+    <button class="btn no-print" onclick="cerrarReporteVisual()" style="margin-top:15px; background:var(--text);">Cerrar Reporte</button>
+</div>
+
 <div id="miMenuLateral" class="sidenav">
     <a href="javascript:void(0)" class="closebtn" onclick="cerrarMenu()">×</a>
     <div style="text-align:center; margin-bottom:20px;"><span style="font-size:2.5rem;">🚕</span><h3 style="margin:5px 0 0;">Menú Élite</h3></div>
     <a href="#" onclick="abrirTabDesdeMenu('tab_clientes')">👥 Base de Clientes VIP</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_ministerio')">📖 Ministerio Público</a>
     <a href="#" onclick="abrirTabDesdeMenu('tab_historial')">📜 Historial de Jornadas</a>
-    <a href="#" onclick="exportarExcelReal()" style="color:var(--success);">📊 Ver Reporte Mes (PDF/Copiar)</a>
-    <a href="#" onclick="exportarBackup()" style="color:var(--accent);">💾 Crear Respaldo (.json)</a>
-    <a href="#" onclick="document.getElementById('file_import').click()">📂 Restaurar Respaldo</a>
+    <a href="#" onclick="generarReporteMesVisual()" style="color:var(--success);">📊 Ver Reporte Mensual</a>
+    <a href="#" onclick="generarReporteFlotaVisual()" style="color:var(--accent);">🏦 Ver Reporte Dueño/Flota</a>
+    <a href="#" onclick="exportarBackup()" style="color:gray; border-top:1px solid var(--border); margin-top:10px;">💾 Crear Respaldo (.json)</a>
+    <a href="#" onclick="document.getElementById('file_import').click()" style="color:gray;">📂 Restaurar Respaldo</a>
 </div>
 
 <div class="header">
     <button class="menu-btn" onclick="abrirMenu()">☰</button>
     <div style="text-align:center;">
         <h2 style="margin:0; font-size:1.1rem; font-weight:600;">Ruta Élite 360</h2>
-        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.27 • REPORTES WEB NATIVOS</p>
+        <p style="margin:2px 0 0; font-size:0.65rem; color:gray;">VERSIÓN 2.29 • REPORTES FLOTA CON KM</p>
     </div>
     <button class="mode-toggle" onclick="toggleMode()">🌙</button>
 </div>
@@ -231,7 +263,7 @@
             <h3 style="margin:20px 0 10px; font-size:0.8rem; color:gray; text-transform:uppercase;">Resumen del Mes</h3>
             <div id="detalle_mes_finanzas" style="font-size:0.8rem;"></div>
             
-            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="exportarExcelReal()">📊 Ver Reporte Mes (PDF/Copiar)</button>
+            <button class="btn" style="background:var(--success); color:white; font-size:1rem; margin-top:20px;" onclick="generarReporteMesVisual()">📊 Ver Reporte Mensual</button>
         </div>
     </div>
 
@@ -301,7 +333,7 @@
             <div class="fondo-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-weight:bold; color:var(--text);">Fondo Guardias</span>
-                    <button onclick="exportarExcelFlota()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📤 Reporte Dueño (PDF)</button>
+                    <button onclick="generarReporteFlotaVisual()" style="background:var(--success); border:none; color:white; font-size:0.65rem; padding:6px 10px; border-radius:8px; cursor:pointer;">📊 Reporte Dueño</button>
                 </div>
                 <span style="font-size:0.65rem; color:gray; text-transform:uppercase;">Saldo Disponible Para Entrega</span>
                 <span id="saldo_guardias" style="display:block; font-size:2rem; font-weight:300; color:var(--text); margin:5px 0;">$0.00</span>
@@ -397,7 +429,7 @@
     </div>
 </div>
 
-<div class="bottom-nav">
+<div class="bottom-nav no-print">
     <button class="nav-item active" onclick="cambiarTab('tab_registro', this)"><span class="nav-icon">📝</span>Registro</button>
     <button class="nav-item" onclick="cambiarTab('tab_finanzas', this)"><span class="nav-icon">📊</span>Finanzas</button>
     <button class="nav-item" onclick="cambiarTab('tab_taximetro', this)"><span class="nav-icon">🚖</span>Taxímetro</button>
@@ -726,7 +758,7 @@
         let maxSemanaNeto = 0;
 
         mesData.forEach(r => {
-            totalNeto += r.neto; totalBruto += r.ing; totalGas += r.gas; totalAhorro += (r.ahorro||0); totalGuardias += (r.gPagada||0);
+            totalNeto += r.neto; totalBruto += r.ing; totalGas += r.gas; totalAhorro += (r.ahorro||0); totalGuardias += (r.gPagada !== undefined ? r.gPagada : 25);
             let diaNum = parseInt(r.completa.split('/')[0]);
             let semIdx = Math.floor((diaNum - 1) / 7); if(semIdx>4) semIdx=4;
             semanasNeto[semIdx] += r.neto;
@@ -745,66 +777,34 @@
         document.getElementById('chart_semanas').innerHTML = chartHtml;
 
         let htmlDetalle = `<div style="display:flex; justify-content:space-between; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid var(--border);"><span>Días Trabajados</span><b>${diasMes} días</b></div>
-                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Ingreso Bruto (Calle)</span><b>$${totalBruto.toFixed(2)}</b></div>
-                           <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:var(--danger);"><span>Guardias y Gasolina</span><b>-$${(totalGuardias + totalGas).toFixed(2)}</b></div>
-                           <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:var(--save);"><span>Ahorro Extraído</span><b>+$${totalAhorro.toFixed(2)}</b></div>`;
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Ingreso Bruto (Calle)</span><b style="color:var(--success)">$${totalBruto.toFixed(2)}</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Gasolina</span><b style="color:var(--danger)">-$${totalGas.toFixed(2)}</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Guardias Pagadas</span><b style="color:var(--danger)">-$${totalGuardias.toFixed(2)}</b></div>
+                           <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Ahorro Extraído</span><b style="color:var(--save)">+$${totalAhorro.toFixed(2)}</b></div>`;
         document.getElementById('detalle_mes_finanzas').innerHTML = htmlDetalle;
     }
 
 
     // ====================================================================
-    // MOTOR DE REPORTES WEB NATIVO (PESTAÑA NUEVA VISUAL)
+    // NUEVO SISTEMA: REPORTES INTERNOS SEGUROS (NO DESCARGAS)
     // ====================================================================
 
-    function generarPaginaHtml(titulo, htmlContenido) {
-        let htmlCuerpo = `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${titulo}</title>
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background: #f3f4f6; color: #1f2937; }
-                .header { text-align: center; margin-bottom: 20px; }
-                .btn-print { display: block; width: 100%; max-width: 300px; margin: 0 auto 20px; background: #2563eb; color: white; padding: 15px; text-align: center; text-decoration: none; border-radius: 10px; font-weight: bold; border: none; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .btn-print:active { transform: scale(0.98); }
-                .tabla-contenedor { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 15px; }
-                table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.9rem; }
-                th { background: #1f2937; color: white; padding: 12px; text-align: center; border: 1px solid #374151; }
-                td { padding: 10px; border: 1px solid #e5e7eb; text-align: center; }
-                tr:nth-child(even) { background-color: #f9fafb; }
-                .ing { color: #16a34a; font-weight: bold; }
-                .out { color: #dc2626; font-weight: bold; }
-                .neto { color: #2563eb; font-weight: bold; font-size: 1.05rem; }
-                .totales td { background: #e5e7eb; font-weight: bold; border-top: 2px solid #9ca3af; }
-                @media print { 
-                    .btn-print, .tip { display: none; } 
-                    body { background: white; padding: 0; } 
-                    .tabla-contenedor { box-shadow: none; padding:0; } 
-                    table { width: 100%; min-width: auto; font-size: 10pt; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h2>🚕 ${titulo}</h2>
-            </div>
-            <button class="btn-print" onclick="window.print()">🖨️ Guardar como PDF / Imprimir</button>
-            <p class="tip" style="text-align:center; font-size:0.8rem; color:gray; margin-bottom:20px;">💡 Tip: Mantén presionado sobre la tabla, selecciona todo, cópialo y pégalo en Google Sheets o Excel.</p>
-            <div class="tabla-contenedor">
-                ${htmlContenido}
-            </div>
-        </body>
-        </html>
+    function abrirReporteVisual(titulo, htmlTabla) {
+        cerrarMenu();
+        let contenedor = document.getElementById('contenido_reporte');
+        contenedor.innerHTML = `
+            <h2 style="text-align:center; color:var(--text); margin-top:0;">🚕 ${titulo}</h2>
+            ${htmlTabla}
         `;
-
-        let blob = new Blob([htmlCuerpo], {type: 'text/html'});
-        let url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        document.getElementById('pantalla_reporte').style.display = 'block';
+        window.scrollTo(0, 0);
     }
 
-    function exportarExcelReal() {
+    function cerrarReporteVisual() {
+        document.getElementById('pantalla_reporte').style.display = 'none';
+    }
+
+    function generarReporteMesVisual() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
         if(db.length === 0) return alert("⚠️ No tienes datos guardados en la base principal.");
         
@@ -817,8 +817,8 @@
 
         let tBruto=0, tGas=0, tGua=0, tCel=0, tAho=0, tNeto=0, tHrs=0;
         
-        let tabla = `<table><thead><tr>
-            <th>Fecha</th><th>Ingreso Bruto</th><th>Gasolina</th><th>Guardia</th><th>Celular</th><th>Ahorro</th><th>Sueldo Neto</th><th>Hrs Taxi</th>
+        let tabla = `<table class="tabla-reporte"><thead><tr>
+            <th>Fecha</th><th>Ing. Bruto</th><th>Gasolina</th><th>Guardia</th><th>Celular</th><th>Ahorro</th><th>Neto</th><th>Hrs</th>
             </tr></thead><tbody>`;
 
         mesData.forEach(r => {
@@ -826,7 +826,7 @@
             tBruto += r.ing||0; tGas += r.gas||0; tGua += guardia; tCel += 1; tAho += r.ahorro||0; tNeto += r.neto||0; tHrs += r.hTaxi||0;
             
             tabla += `<tr>
-                <td>${r.completa}</td>
+                <td style="white-space:nowrap;">${r.completa}</td>
                 <td class="ing">$${(r.ing||0).toFixed(2)}</td>
                 <td class="out">-$${(r.gas||0).toFixed(2)}</td>
                 <td class="out">-$${guardia.toFixed(2)}</td>
@@ -838,7 +838,7 @@
         });
 
         tabla += `<tr class="totales">
-            <td>TOTALES</td>
+            <td>TOTAL</td>
             <td class="ing">$${tBruto.toFixed(2)}</td>
             <td class="out">-$${tGas.toFixed(2)}</td>
             <td class="out">-$${tGua.toFixed(2)}</td>
@@ -849,36 +849,54 @@
         </tr></tbody></table>`;
 
         let tituloStr = `Reporte Mensual - ${mesesNombres[fechaFinanzas.getMonth()]} ${anioStr}`;
-        generarPaginaHtml(tituloStr, tabla);
+        abrirReporteVisual(tituloStr, tabla);
     }
 
-    function exportarExcelFlota() {
+    function generarReporteFlotaVisual() {
         let db = JSON.parse(localStorage.getItem('ruta360_db') || '[]');
         let gastos = JSON.parse(localStorage.getItem('ruta360_gastos_op') || '[]');
         
-        let dataFormat = [];
-        let totalG = 0, totalE = 0;
+        // FILTRAR DÍAS NO LIQUIDADOS
+        let diasNoLiquidados = db.filter(r => !r.liquidadoFlota);
         
-        db.forEach(r => { 
-            if(!r.liquidadoFlota) { 
-                let g = r.gPagada !== undefined ? r.gPagada : 25; 
-                if(g > 0) { dataFormat.push({ fecha: r.completa || "", concepto: "Guardia Diaria", ingreso: g, egreso: 0 }); totalG += g; } 
+        // RESTRICCIÓN: VALIDAR SI FALTA KILOMETRAJE
+        let diasSinKm = diasNoLiquidados.filter(r => r.km === 0 || r.km === undefined || r.km === "").map(r => r.completa);
+        if (diasSinKm.length > 0) {
+            return alert("⚠️ No puedes generar el reporte del dueño.\n\nFalta ingresar el kilometraje en los siguientes días:\n" + diasSinKm.join(', ') + "\n\nPor favor, completa estos datos en el Historial para continuar.");
+        }
+
+        let dataFormat = [];
+        let totalG = 0, totalE = 0, totalKm = 0;
+        
+        diasNoLiquidados.forEach(r => { 
+            let g = r.gPagada !== undefined ? r.gPagada : 25; 
+            let km = parseFloat(r.km) || 0;
+            if(g > 0 || km > 0) { 
+                dataFormat.push({ fecha: r.completa || "", concepto: "Guardia Diaria", km: km, ingreso: g, egreso: 0 }); 
+                totalG += g; 
+                totalKm += km;
             } 
         });
+        
         gastos.forEach(g => { 
-            if(!g.liquidadoFlota) { dataFormat.push({ fecha: g.fecha || "", concepto: g.concepto || "Gasto Operativo", ingreso: 0, egreso: g.monto }); totalE += g.monto; } 
+            if(!g.liquidadoFlota) { 
+                dataFormat.push({ fecha: g.fecha || "", concepto: g.concepto || "Gasto Operativo", km: "-", ingreso: 0, egreso: g.monto }); 
+                totalE += g.monto; 
+            } 
         });
 
         if(dataFormat.length === 0) return alert("⚠️ No hay fondos acumulados ni gastos para la flota.");
 
-        let tabla = `<table><thead><tr>
-            <th>Fecha</th><th>Concepto</th><th>Ingreso a Flota</th><th>Gasto Extraído</th>
+        let tabla = `<table class="tabla-reporte"><thead><tr>
+            <th>Fecha</th><th>Concepto</th><th>KMs</th><th>Ingreso Flota</th><th>Gasto Extraído</th>
             </tr></thead><tbody>`;
 
         dataFormat.forEach(d => {
+            let kmStr = d.km !== "-" ? d.km.toFixed(1) : "-";
             tabla += `<tr>
-                <td>${d.fecha}</td>
-                <td>${d.concepto}</td>
+                <td style="white-space:nowrap;">${d.fecha}</td>
+                <td style="text-align:left;">${d.concepto}</td>
+                <td style="font-weight:bold;">${kmStr}</td>
                 <td class="${d.ingreso > 0 ? 'ing' : ''}">${d.ingreso > 0 ? '$'+d.ingreso.toFixed(2) : '-'}</td>
                 <td class="${d.egreso > 0 ? 'out' : ''}">${d.egreso > 0 ? '-$'+d.egreso.toFixed(2) : '-'}</td>
             </tr>`;
@@ -886,15 +904,16 @@
 
         tabla += `<tr class="totales">
             <td colspan="2" style="text-align:right;">TOTALES:</td>
+            <td>${totalKm.toFixed(1)}</td>
             <td class="ing">$${totalG.toFixed(2)}</td>
             <td class="out">-$${totalE.toFixed(2)}</td>
         </tr>
-        <tr class="totales" style="background: #2563eb; color:white;">
+        <tr class="totales" style="background: var(--accent); color:white;">
             <td colspan="3" style="text-align:right;">SALDO FINAL A ENTREGAR:</td>
-            <td style="font-size:1.2rem;">$${(totalG - totalE).toFixed(2)}</td>
+            <td colspan="2" style="font-size:1.2rem; text-align:center;">$${(totalG - totalE).toFixed(2)}</td>
         </tr></tbody></table>`;
 
-        generarPaginaHtml("Liquidación de Dueño / Flota", tabla);
+        abrirReporteVisual("Liquidación de Dueño / Flota", tabla);
     }
 
     function renderHistorialGeneral() {
@@ -931,4 +950,4 @@
     }
 </script>
 </body>
-</html>
+        </html>
